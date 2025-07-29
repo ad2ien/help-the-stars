@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -13,7 +12,6 @@ var once sync.Once
 
 func GetSettings() {
 	once.Do(func() {
-		fmt.Println("Only see this once")
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatalf("Failed to load .env file")

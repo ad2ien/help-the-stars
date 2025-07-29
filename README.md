@@ -18,7 +18,7 @@
 ```graphql
 query {
   viewer {
-    starredRepositories(first: 50) {
+    starredRepositories(first: 50, after: $cursor) {
       nodes {
         nameWithOwner
         description

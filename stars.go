@@ -7,6 +7,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const LIMIT_CALLS = 3
+
 type HelpWantedIssue struct {
 	Title            string
 	IssueDescription string
@@ -26,13 +28,17 @@ type GhRepository struct {
 	Description   githubv4.String
 	Issues        struct {
 		Nodes []GhIssue
-	} `graphql:"issues(states: OPEN, labels: [\"help-wanted\"], first: 5)"`
+	} `graphql:"issues(states: OPEN, labels: [\"help-wanted\"], first: 5, after: $cursor)"`
 }
 
 type GhQuery struct {
 	Viewer struct {
 		StarredRepositories struct {
-			Nodes []GhRepository
+			Nodes    []GhRepository
+			PageInfo struct {
+				EndCursor   githubv4.String
+				HasNextPage githubv4.Boolean
+			}
 		} `graphql:"starredRepositories(first: 50)"`
 	}
 }
@@ -44,13 +50,36 @@ func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 	httpClient := oauth2.NewClient(context.Background(), src)
 	client := githubv4.NewClient(httpClient)
 
-	var query GhQuery
-	err := client.Query(context.Background(), &query, nil)
-	if err != nil {
-		return nil, err
+	cursor := (*githubv4.String)(nil)
+	variables := map[string]interface{}{
+		"cursor": cursor,
 	}
 
-	return mapGhQueryToHelpWantedIssue(query), nil
+	result := make([]HelpWantedIssue, 0)
+	i := 0
+	for {
+		var query GhQuery
+
+		err := client.Query(context.Background(), &query, variables)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, mapGhQueryToHelpWantedIssue(query)...)
+
+		if query.Viewer.StarredRepositories.PageInfo.HasNextPage {
+			cursor = githubv4.NewString(query.Viewer.StarredRepositories.PageInfo.EndCursor)
+		} else {
+			break
+		}
+
+		if i >= LIMIT_CALLS {
+			break
+		}
+		i++
+	}
+
+	return result, nil
 }
 
 func mapGhQueryToHelpWantedIssue(query GhQuery) []HelpWantedIssue {
