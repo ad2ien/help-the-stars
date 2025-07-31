@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Help the stars</title>
+</head>
+<body>
+    <h1>Help the stars</h1>
+    <ul>
+    {{ range . }}
+        <li>
+            <a href="{{ .URL }}">{{ .Title }}</a>
+            <p>{{ .IssueDescription }}</p>
+            <p>Repo: {{ .RepoOwner }} ({{ .RepoDescription }})</p>
+        </li>
+    {{ end }}
+    </ul>
+</body>
+</html>

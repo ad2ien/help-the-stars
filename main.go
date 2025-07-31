@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -28,11 +30,25 @@ func main() {
 	}
 
 	GetSettings()
-	res, err := GetStaredRepos(50)
+
+	fmt.Println("Loading issues...")
+	data, err := GetStaredRepos(50)
 	if err != nil {
-		log.Fatal("Gh Request error : ", err)
+		log.Fatal(err)
 	}
 
-	log.Println(res)
+	fmt.Println("data loaded, starting server...")
+	startServer(data)
+}
 
+func startServer(data []HelpWantedIssue) {
+	tmpl := template.Must(template.ParseFiles("templates/index.html"))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if err := tmpl.Execute(w, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	log.Println("Server listening on port 1983")
+	http.ListenAndServe(":1983", nil)
 }
