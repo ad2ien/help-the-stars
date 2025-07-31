@@ -28,7 +28,7 @@ type GhRepository struct {
 	Description   githubv4.String
 	Issues        struct {
 		Nodes []GhIssue
-	} `graphql:"issues(states: OPEN, labels: [\"help-wanted\"], first: 5, after: $cursor)"`
+	} `graphql:"issues(states: OPEN, labels: [\"help-wanted\"], first: 5)"`
 }
 
 type GhQuery struct {
@@ -39,7 +39,7 @@ type GhQuery struct {
 				EndCursor   githubv4.String
 				HasNextPage githubv4.Boolean
 			}
-		} `graphql:"starredRepositories(first: 50)"`
+		} `graphql:"starredRepositories(first: 50, after: $cursor)"`
 	}
 }
 
@@ -50,9 +50,8 @@ func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 	httpClient := oauth2.NewClient(context.Background(), src)
 	client := githubv4.NewClient(httpClient)
 
-	cursor := (*githubv4.String)(nil)
 	variables := map[string]interface{}{
-		"cursor": cursor,
+		"cursor": (*githubv4.String)(nil),
 	}
 
 	result := make([]HelpWantedIssue, 0)
@@ -68,7 +67,7 @@ func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 		result = append(result, mapGhQueryToHelpWantedIssue(query)...)
 
 		if query.Viewer.StarredRepositories.PageInfo.HasNextPage {
-			cursor = githubv4.NewString(query.Viewer.StarredRepositories.PageInfo.EndCursor)
+			variables["cursor"] = *githubv4.NewString(query.Viewer.StarredRepositories.PageInfo.EndCursor)
 		} else {
 			break
 		}
