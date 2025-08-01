@@ -16,19 +16,26 @@
 - watch for rate limiting, display percentage of requests if needed
 
 ```graphql
-query {
+{
   viewer {
-    starredRepositories(first: 50, after: $cursor) {
+    starredRepositories(first: 50, after: "$cursor") {
       nodes {
         nameWithOwner
         description
-        issues(states: OPEN, labels: ["help-wanted"] first: 5){
-          nodes{
+        issues(states: OPEN, labels: ["help-wanted"], first: 5) {
+          nodes {
             title
             url
             body
           }
+          pageInfo {
+            hasNextPage
+          }
         }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
       }
     }
   }
@@ -40,3 +47,12 @@ query {
 ```bash
 go run *.go
 ```
+
+## Todo list
+
+- [ ] some css
+- [ ] pagination progress
+- [ ] records request in db
+- [ ] send alert
+- [ ] manage rate limiting
+- [ ] sort/discard issues
