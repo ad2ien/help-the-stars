@@ -41,7 +41,7 @@ func main() {
 	startServer(data)
 }
 
-func startServer(data []HelpWantedIssue) {
+func startServer(data []HelpLookingRepo) {
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := tmpl.Execute(w, data); err != nil {

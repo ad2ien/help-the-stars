@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Help the stars</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Help the stars</h1>
-    <ul>
     {{ range . }}
-        <li>
-            <a href="{{ .URL }}">{{ .Title }}</a>
-            <p>{{ .IssueDescription }}</p>
-            <p>Repo: {{ .RepoOwner }} ({{ .RepoDescription }})</p>
-        </li>
-    {{ end }}
+    <h2>{{ .RepoOwner }}</h2>
+    <p>{{ .RepoDescription }}</p>
+    <ul>
+      {{ range .Issues }}
+      <li>
+        <a href="{{ .URL }}">{{ .Title }}</a>
+        <p>{{ printf "%.100s" .IssueDescription }}...</p>
+      </li>
+      {{ end }}
     </ul>
-</body>
+    {{ end }}
+  </body>
 </html>
