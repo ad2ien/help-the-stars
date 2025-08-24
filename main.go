@@ -1,8 +1,11 @@
 package main
 
 import (
+	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"help-the-stars/internal"
 	"html/template"
 	"log"
 	"net/http"
@@ -10,6 +13,9 @@ import (
 )
 
 var version = "1.0.0"
+
+// go-embed: migration
+var Migrations embed.FS
 
 func main() {
 	helpFlag := flag.Bool("help", false, "Display help information")
@@ -29,24 +35,28 @@ func main() {
 		os.Exit(0)
 	}
 
-	GetSettings()
+	internal.GetSettings()
 
-	fmt.Println("Loading issues...")
-	data, err := GetStaredRepos(50)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := internal.NewConnection(Migrations)
+	defer db.Close()
 
 	fmt.Println("data loaded, starting server...")
-	startServer(data)
+	startServer()
 }
 
-func startServer(data []HelpLookingRepo) {
+func startServer() {
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
+		data := internal.GetNextPage("")
 		if err := tmpl.Execute(w, data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+	})
+
+	http.HandleFunc("/thanksdata", func(w http.ResponseWriter, r *http.Request) {
+		data := internal.GetNextPage("")
+		json.NewEncoder(w).Encode(data)
 	})
 
 	log.Println("Server listening on port 1983")

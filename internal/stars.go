@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"context"
@@ -8,19 +8,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const LIMIT_CALLS = 3
-
-type HelpWantedIssue struct {
-	Title            string
-	IssueDescription string
-	URL              string
-}
-
-type HelpLookingRepo struct {
-	RepoOwner       string
-	RepoDescription string
-	Issues          []HelpWantedIssue
-}
+const LIMIT_CALLS = 2
 
 type GhIssue struct {
 	Title githubv4.String
@@ -44,7 +32,7 @@ type GhQuery struct {
 				EndCursor   githubv4.String
 				HasNextPage githubv4.Boolean
 			}
-		} `graphql:"starredRepositories(first: 50, after: $cursor)"`
+		} `graphql:"starredRepositories(first: 10, after: $cursor)"`
 	}
 }
 
@@ -79,7 +67,7 @@ func GetStaredRepos(first int) ([]HelpLookingRepo, error) {
 		}
 
 		if i >= LIMIT_CALLS {
-			// break
+			break
 		}
 		i++
 	}
