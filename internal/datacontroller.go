@@ -1,37 +1,46 @@
 package internal
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
+	"help-the-stars/internal/persistence"
 	"log"
 	"time"
 )
 
-type HelpWantedIssue struct {
-	Title            string
-	IssueDescription string
-	URL              string
+type DataController struct {
+	queries *persistence.Queries
 }
 
-type HelpLookingRepo struct {
-	RepoOwner       string
-	RepoDescription string
-	Issues          []HelpWantedIssue
+func CreateControler(db *sql.DB) *DataController {
+	return &DataController{
+		queries: persistence.New(db),
+	}
 }
 
-type ThankStarsData struct {
-	LastUpdate        time.Time
-	HasNextPage       bool
-	CurrentlyUpdating bool
-	HelpLookingRepo   []HelpLookingRepo
-}
-
-func GetNextPage(index string) ThankStarsData {
+func (d *DataController) GetAndSaveIssues() ThankStarsData {
 
 	// when, where from...
 	fmt.Println("Loading issues...")
 	data, err := GetStaredRepos(50)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+	for i := 0; i < len(data); i++ {
+
+		for j := 0; j < len(data[i].Issues); j++ {
+			fmt.Println("Save an issue ", data[i].Issues[j].URL)
+			d.queries.CreateIssue(ctx, persistence.CreateIssueParams{
+				Link:         data[i].Issues[j].URL,
+				Title:        sql.NullString{String: data[i].Issues[j].Title, Valid: true},
+				Description:  sql.NullString{String: data[i].Issues[j].IssueDescription, Valid: true},
+				Owner:        sql.NullString{String: data[i].RepoOwner, Valid: true},
+				CreationDate: sql.NullTime{Time: time.Now(), Valid: true},
+			})
+		}
 	}
 
 	return ThankStarsData{

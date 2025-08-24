@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"help-the-stars/internal"
@@ -40,6 +39,9 @@ func main() {
 	db := internal.NewConnection(Migrations)
 	defer db.Close()
 
+	controller := internal.CreateControler(db.Connection)
+	controller.GetAndSaveIssues()
+
 	fmt.Println("data loaded, starting server...")
 	startServer()
 }
@@ -48,16 +50,15 @@ func startServer() {
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
-		data := internal.GetNextPage("")
-		if err := tmpl.Execute(w, data); err != nil {
+		if err := tmpl.Execute(w, nil); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	http.HandleFunc("/thanksdata", func(w http.ResponseWriter, r *http.Request) {
-		data := internal.GetNextPage("")
-		json.NewEncoder(w).Encode(data)
-	})
+	// http.HandleFunc("/thanksdata", func(w http.ResponseWriter, r *http.Request) {
+	// 	data := internal.GetNextPage("")
+	// 	json.NewEncoder(w).Encode(data)
+	// })
 
 	log.Println("Server listening on port 1983")
 	http.ListenAndServe(":1983", nil)

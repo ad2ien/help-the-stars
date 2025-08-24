@@ -18,7 +18,7 @@ import (
 const dbFileName = "help-stars.db"
 
 type DbConnection struct {
-	connection *sql.DB
+	Connection *sql.DB
 }
 
 func NewConnection(migrationsFs embed.FS) DbConnection {
@@ -34,7 +34,7 @@ func NewConnection(migrationsFs embed.FS) DbConnection {
 }
 
 func (dbConn *DbConnection) Close() {
-	dbConn.connection.Close()
+	dbConn.Connection.Close()
 }
 
 const schemaVersion = 1
