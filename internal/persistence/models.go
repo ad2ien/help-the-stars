@@ -6,13 +6,15 @@ package persistence
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Issue struct {
-	ID           int64
-	Link         string
-	Title        sql.NullString
-	Description  sql.NullString
-	Owner        sql.NullString
-	CreationDate sql.NullTime
+	Url             string
+	RepoWithOwner   string
+	Title           string
+	Description     string
+	CreationDate    time.Time
+	RepoDescription string
+	StargazersCount sql.NullInt64
 }

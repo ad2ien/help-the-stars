@@ -17,9 +17,10 @@ type GhIssue struct {
 }
 
 type GhRepository struct {
-	NameWithOwner githubv4.String
-	Description   githubv4.String
-	Issues        struct {
+	NameWithOwner  githubv4.String
+	Description    githubv4.String
+	StargazerCount githubv4.Int
+	Issues         struct {
 		Nodes []GhIssue
 	} `graphql:"issues(states: OPEN, labels: [\"help-wanted\"], first: 5)"`
 }
@@ -36,7 +37,7 @@ type GhQuery struct {
 	}
 }
 
-func GetStaredRepos(first int) ([]HelpLookingRepo, error) {
+func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: GetSetting("GITHUB_TOKEN")},
 	)
@@ -47,7 +48,7 @@ func GetStaredRepos(first int) ([]HelpLookingRepo, error) {
 		"cursor": (*githubv4.String)(nil),
 	}
 
-	result := make([]HelpLookingRepo, 0)
+	result := make([]HelpWantedIssue, 0)
 	i := 0
 	for {
 		var query GhQuery

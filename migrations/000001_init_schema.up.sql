@@ -1,9 +1,10 @@
 CREATE TABLE
   issues (
-    id INTEGER PRIMARY KEY,
-    link text NOT NULL,
-    title text,
-    description text,
-    owner text,
-    creation_date timestamp
+    url text PRIMARY KEY,
+    repo_with_owner text NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    creation_date timestamp NOT NULL,
+    repo_description text NOT NULL,
+    stargazers_count integer
   );

@@ -4,7 +4,7 @@ SELECT
 FROM
   issues
 WHERE
-  id = ?
+  url = ?
 LIMIT
   1;
 
@@ -14,26 +14,27 @@ SELECT
 FROM
   issues
 ORDER BY
-  name;
+  creation_date DESC;
 
 -- name: CreateIssue :one
 INSERT INTO
-  issues (link, title, description, owner, creation_date)
+  issues (url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count)
 VALUES
-  (?, ?, ?, ?, ?) RETURNING *;
+  (?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: UpdateIssue :exec
 UPDATE issues
 set
-  link = ?,
+  repo_with_owner = ?,
   title = ?,
   description = ?,
-  owner = ?,
-  creation_date = ?
+  creation_date = ?,
+  repo_description = ?,
+  stargazers_count = ?
 WHERE
-  id = ?;
+  url = ?;
 
 -- name: DeleteIssue :exec
 DELETE FROM issues
 WHERE
-  id = ?;
+  url = ?;

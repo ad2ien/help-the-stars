@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"help-the-stars/internal/persistence"
 	"log"
-	"time"
+
+	"help-the-stars/internal/persistence"
 )
 
 type DataController struct {
@@ -19,7 +19,7 @@ func CreateControler(db *sql.DB) *DataController {
 	}
 }
 
-func (d *DataController) GetAndSaveIssues() ThankStarsData {
+func (d *DataController) GetAndSaveIssues() {
 
 	// when, where from...
 	fmt.Println("Loading issues...")
@@ -31,22 +31,8 @@ func (d *DataController) GetAndSaveIssues() ThankStarsData {
 	ctx := context.Background()
 	for i := 0; i < len(data); i++ {
 
-		for j := 0; j < len(data[i].Issues); j++ {
-			fmt.Println("Save an issue ", data[i].Issues[j].URL)
-			d.queries.CreateIssue(ctx, persistence.CreateIssueParams{
-				Link:         data[i].Issues[j].URL,
-				Title:        sql.NullString{String: data[i].Issues[j].Title, Valid: true},
-				Description:  sql.NullString{String: data[i].Issues[j].IssueDescription, Valid: true},
-				Owner:        sql.NullString{String: data[i].RepoOwner, Valid: true},
-				CreationDate: sql.NullTime{Time: time.Now(), Valid: true},
-			})
-		}
-	}
-
-	return ThankStarsData{
-		LastUpdate:        time.Now(),
-		HasNextPage:       true,
-		CurrentlyUpdating: false,
-		HelpLookingRepo:   data,
+		fmt.Println("Save an issue ", data[i].Url)
+		d.queries.CreateIssue(ctx,
+			mapModelToDbParameter(data[i]))
 	}
 }

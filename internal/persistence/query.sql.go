@@ -8,39 +8,45 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const createIssue = `-- name: CreateIssue :one
 INSERT INTO
-  issues (link, title, description, owner, creation_date)
+  issues (url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count)
 VALUES
-  (?, ?, ?, ?, ?) RETURNING id, link, title, description, owner, creation_date
+  (?, ?, ?, ?, ?, ?, ?) RETURNING url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count
 `
 
 type CreateIssueParams struct {
-	Link         string
-	Title        sql.NullString
-	Description  sql.NullString
-	Owner        sql.NullString
-	CreationDate sql.NullTime
+	Url             string
+	RepoWithOwner   string
+	Title           string
+	Description     string
+	CreationDate    time.Time
+	RepoDescription string
+	StargazersCount sql.NullInt64
 }
 
 func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue, error) {
 	row := q.db.QueryRowContext(ctx, createIssue,
-		arg.Link,
+		arg.Url,
+		arg.RepoWithOwner,
 		arg.Title,
 		arg.Description,
-		arg.Owner,
 		arg.CreationDate,
+		arg.RepoDescription,
+		arg.StargazersCount,
 	)
 	var i Issue
 	err := row.Scan(
-		&i.ID,
-		&i.Link,
+		&i.Url,
+		&i.RepoWithOwner,
 		&i.Title,
 		&i.Description,
-		&i.Owner,
 		&i.CreationDate,
+		&i.RepoDescription,
+		&i.StargazersCount,
 	)
 	return i, err
 }
@@ -48,46 +54,47 @@ func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue
 const deleteIssue = `-- name: DeleteIssue :exec
 DELETE FROM issues
 WHERE
-  id = ?
+  url = ?
 `
 
-func (q *Queries) DeleteIssue(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteIssue, id)
+func (q *Queries) DeleteIssue(ctx context.Context, url string) error {
+	_, err := q.db.ExecContext(ctx, deleteIssue, url)
 	return err
 }
 
 const getIssue = `-- name: GetIssue :one
 SELECT
-  id, link, title, description, owner, creation_date
+  url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count
 FROM
   issues
 WHERE
-  id = ?
+  url = ?
 LIMIT
   1
 `
 
-func (q *Queries) GetIssue(ctx context.Context, id int64) (Issue, error) {
-	row := q.db.QueryRowContext(ctx, getIssue, id)
+func (q *Queries) GetIssue(ctx context.Context, url string) (Issue, error) {
+	row := q.db.QueryRowContext(ctx, getIssue, url)
 	var i Issue
 	err := row.Scan(
-		&i.ID,
-		&i.Link,
+		&i.Url,
+		&i.RepoWithOwner,
 		&i.Title,
 		&i.Description,
-		&i.Owner,
 		&i.CreationDate,
+		&i.RepoDescription,
+		&i.StargazersCount,
 	)
 	return i, err
 }
 
 const listIssues = `-- name: ListIssues :many
 SELECT
-  id, link, title, description, owner, creation_date
+  url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count
 FROM
   issues
 ORDER BY
-  name
+  creation_date DESC
 `
 
 func (q *Queries) ListIssues(ctx context.Context) ([]Issue, error) {
@@ -100,12 +107,13 @@ func (q *Queries) ListIssues(ctx context.Context) ([]Issue, error) {
 	for rows.Next() {
 		var i Issue
 		if err := rows.Scan(
-			&i.ID,
-			&i.Link,
+			&i.Url,
+			&i.RepoWithOwner,
 			&i.Title,
 			&i.Description,
-			&i.Owner,
 			&i.CreationDate,
+			&i.RepoDescription,
+			&i.StargazersCount,
 		); err != nil {
 			return nil, err
 		}
@@ -123,32 +131,35 @@ func (q *Queries) ListIssues(ctx context.Context) ([]Issue, error) {
 const updateIssue = `-- name: UpdateIssue :exec
 UPDATE issues
 set
-  link = ?,
+  repo_with_owner = ?,
   title = ?,
   description = ?,
-  owner = ?,
-  creation_date = ?
+  creation_date = ?,
+  repo_description = ?,
+  stargazers_count = ?
 WHERE
-  id = ?
+  url = ?
 `
 
 type UpdateIssueParams struct {
-	Link         string
-	Title        sql.NullString
-	Description  sql.NullString
-	Owner        sql.NullString
-	CreationDate sql.NullTime
-	ID           int64
+	RepoWithOwner   string
+	Title           string
+	Description     string
+	CreationDate    time.Time
+	RepoDescription string
+	StargazersCount sql.NullInt64
+	Url             string
 }
 
 func (q *Queries) UpdateIssue(ctx context.Context, arg UpdateIssueParams) error {
 	_, err := q.db.ExecContext(ctx, updateIssue,
-		arg.Link,
+		arg.RepoWithOwner,
 		arg.Title,
 		arg.Description,
-		arg.Owner,
 		arg.CreationDate,
-		arg.ID,
+		arg.RepoDescription,
+		arg.StargazersCount,
+		arg.Url,
 	)
 	return err
 }

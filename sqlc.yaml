@@ -6,4 +6,4 @@ sql:
     gen:
       go:
         package: "persistence"
-        out: "src/persistence"
+        out: "internal/persistence"

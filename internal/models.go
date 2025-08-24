@@ -3,20 +3,17 @@ package internal
 import "time"
 
 type HelpWantedIssue struct {
+	Url              string
 	Title            string
 	IssueDescription string
-	URL              string
-}
-
-type HelpLookingRepo struct {
-	RepoOwner       string
-	RepoDescription string
-	Issues          []HelpWantedIssue
+	CreationDate     time.Time
+	RepoOwner        string
+	RepoDescription  string
+	StargazersCount  int
 }
 
 type ThankStarsData struct {
 	LastUpdate        time.Time
 	HasNextPage       bool
 	CurrentlyUpdating bool
-	HelpLookingRepo   []HelpLookingRepo
 }
