@@ -8,12 +8,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const LIMIT_CALLS = 5
-
 type GhIssue struct {
-	Title githubv4.String
-	URL   githubv4.String
-	Body  githubv4.String
+	Title     githubv4.String
+	URL       githubv4.String
+	Body      githubv4.String
+	CreatedAt githubv4.DateTime
 }
 
 type GhRepository struct {
@@ -49,7 +48,6 @@ func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 	}
 
 	result := make([]HelpWantedIssue, 0)
-	i := 0
 	for {
 		var query GhQuery
 		fmt.Print("-")
@@ -66,11 +64,6 @@ func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 		} else {
 			break
 		}
-
-		if i >= LIMIT_CALLS {
-			break
-		}
-		i++
 	}
 
 	return result, nil

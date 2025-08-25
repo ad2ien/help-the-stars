@@ -13,7 +13,7 @@ type HelpWantedIssue struct {
 }
 
 type ThankStarsData struct {
+	Issues            []HelpWantedIssue
 	LastUpdate        time.Time
-	HasNextPage       bool
 	CurrentlyUpdating bool
 }

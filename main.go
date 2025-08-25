@@ -46,22 +46,25 @@ func main() {
 	go controller.Worker()
 
 	fmt.Println("starting server...")
-	startServer()
+	startServer(controller)
 }
 
-func startServer() {
+func startServer(controller *internal.DataController) {
+
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
-		if err := tmpl.Execute(w, nil); err != nil {
+		data, err := controller.GetDataForView()
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			err := tmpl.Execute(w, data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
 	})
-
-	// http.HandleFunc("/thanksdata", func(w http.ResponseWriter, r *http.Request) {
-	// 	data := internal.GetNextPage("")
-	// 	json.NewEncoder(w).Encode(data)
-	// })
 
 	log.Println("Server listening on port 1983")
 	http.ListenAndServe(":1983", nil)

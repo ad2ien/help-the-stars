@@ -3,19 +3,23 @@
   <head>
     <title>Help the stars</title>
   </head>
+  <script src="https://unpkg.com/htmx.org@1.7.0/dist/htmx.min.js"></script>
   <body>
     <h1>Help the stars</h1>
-    {{ range . }}
-    <h2>{{ .RepoOwner }}</h2>
-    <p>{{ .RepoDescription }}</p>
-    <ul>
-      {{ range .Issues }}
-      <li>
-        <a href="{{ .URL }}">{{ .Title }}</a>
-        <p>{{ printf "%.100s" .IssueDescription }}...</p>
-      </li>
-      {{ end }}
-    </ul>
+    <h3>
+    {{if .CurrentlyUpdating}}
+      Currently updating..
+    {{else}}
+      Last update: {{ .LastUpdate }}
+    {{end}}
+    </h3>
+
+    {{ range .Issues }}
+    <h2>{{ .Title }}</h2>
+    <a href="{{ .Url }}">{{ .CreationDate }}</a>
+    <h3>{{ .RepoOwner }} - {{ .StargazersCount }}⭐</h3>
+    <p>{{ printf "%.100s" .IssueDescription }}...</p>
+    <p><i>{{ .RepoDescription }}</i></p>
     {{ end }}
   </body>
 </html>

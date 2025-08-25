@@ -25,6 +25,18 @@ func CreateController(db *sql.DB) *DataController {
 	}
 }
 
+func (d *DataController) GetDataForView() (ThankStarsData, error) {
+	issues, err := d.queries.ListIssues(d.ctx)
+	if err != nil {
+		return ThankStarsData{}, err
+	}
+	taskData, err := d.queries.GetTaskData(d.ctx)
+	if err != nil {
+		return ThankStarsData{}, err
+	}
+	return mapDbResultToViewData(issues, taskData), nil
+}
+
 func (d *DataController) GetAndSaveIssues() {
 
 	d.queries.TaskDataInProgress(d.ctx)
@@ -42,6 +54,8 @@ func (d *DataController) GetAndSaveIssues() {
 		d.queries.CreateIssue(d.ctx,
 			mapModelToDbParameter(data[i]))
 	}
+
+	//TODO delete old issues
 
 	err = d.queries.UpdateTimeTaskData(d.ctx, sql.NullTime{Time: time.Now(), Valid: true})
 	if err != nil {

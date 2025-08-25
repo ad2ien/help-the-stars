@@ -28,6 +28,7 @@
             title
             url
             body
+            createdAt
           }
           pageInfo {
             hasNextPage
