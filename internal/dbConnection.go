@@ -5,6 +5,7 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 
@@ -16,6 +17,7 @@ import (
 )
 
 const dbFileName = "help-stars.db"
+const schemaVersion = 2
 
 type DbConnection struct {
 	Connection *sql.DB
@@ -28,7 +30,10 @@ func NewConnection(migrationsFs embed.FS) DbConnection {
 		log.Fatal(err)
 	}
 
-	ensureSchema(migrationsFs, conn)
+	err = ensureSchema(migrationsFs, conn)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return DbConnection{conn}
 }
@@ -37,9 +42,16 @@ func (dbConn *DbConnection) Close() {
 	dbConn.Connection.Close()
 }
 
-const schemaVersion = 1
-
 func ensureSchema(migrations embed.FS, db *sql.DB) error {
+
+	fs, err := fs.Sub(migrations, "migrations")
+	if err != nil {
+		fmt.Println("caca ", err)
+	} else {
+		fmt.Println("ok ", fs)
+		fmt.Println(fs.Open("migrations/000001_init_schema.up.sql"))
+	}
+
 	sourceInstance, err := httpfs.New(http.FS(migrations), "migrations")
 	if err != nil {
 		return fmt.Errorf("invalid source instance, %w", err)

@@ -51,6 +51,20 @@ func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue
 	return i, err
 }
 
+const createTaskData = `-- name: CreateTaskData :one
+INSERT INTO
+  task_data (id, last_run)
+VALUES
+  (1, ?) RETURNING id, last_run
+`
+
+func (q *Queries) CreateTaskData(ctx context.Context, lastRun time.Time) (TaskDatum, error) {
+	row := q.db.QueryRowContext(ctx, createTaskData, lastRun)
+	var i TaskDatum
+	err := row.Scan(&i.ID, &i.LastRun)
+	return i, err
+}
+
 const deleteIssue = `-- name: DeleteIssue :exec
 DELETE FROM issues
 WHERE
@@ -59,6 +73,17 @@ WHERE
 
 func (q *Queries) DeleteIssue(ctx context.Context, url string) error {
 	_, err := q.db.ExecContext(ctx, deleteIssue, url)
+	return err
+}
+
+const deleteTaskData = `-- name: DeleteTaskData :exec
+DELETE FROM task_data
+WHERE
+  id = 1
+`
+
+func (q *Queries) DeleteTaskData(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteTaskData)
 	return err
 }
 
@@ -85,6 +110,22 @@ func (q *Queries) GetIssue(ctx context.Context, url string) (Issue, error) {
 		&i.RepoDescription,
 		&i.StargazersCount,
 	)
+	return i, err
+}
+
+const getTaskData = `-- name: GetTaskData :one
+SELECT
+  id, last_run
+FROM
+  task_data
+LIMIT
+  1
+`
+
+func (q *Queries) GetTaskData(ctx context.Context) (TaskDatum, error) {
+	row := q.db.QueryRowContext(ctx, getTaskData)
+	var i TaskDatum
+	err := row.Scan(&i.ID, &i.LastRun)
 	return i, err
 }
 
@@ -161,5 +202,18 @@ func (q *Queries) UpdateIssue(ctx context.Context, arg UpdateIssueParams) error 
 		arg.StargazersCount,
 		arg.Url,
 	)
+	return err
+}
+
+const updateTaskData = `-- name: UpdateTaskData :exec
+UPDATE task_data
+SET
+  last_run = ?
+WHERE
+  id = 1
+`
+
+func (q *Queries) UpdateTaskData(ctx context.Context, lastRun time.Time) error {
+	_, err := q.db.ExecContext(ctx, updateTaskData, lastRun)
 	return err
 }

@@ -38,3 +38,29 @@ WHERE
 DELETE FROM issues
 WHERE
   url = ?;
+
+-- name: GetTaskData :one
+SELECT
+  *
+FROM
+  task_data
+LIMIT
+  1;
+
+-- name: UpdateTaskData :exec
+UPDATE task_data
+SET
+  last_run = ?
+WHERE
+  id = 1;
+
+-- name: CreateTaskData :one
+INSERT INTO
+  task_data (id, last_run)
+VALUES
+  (1, ?) RETURNING *;
+
+-- name: DeleteTaskData :exec
+DELETE FROM task_data
+WHERE
+  id = 1;

@@ -13,10 +13,11 @@ import (
 
 var version = "1.0.0"
 
-// go-embed: migration
+//go:embed migrations
 var Migrations embed.FS
 
 func main() {
+
 	helpFlag := flag.Bool("help", false, "Display help information")
 	versionFlag := flag.Bool("version", false, "Display version information")
 
@@ -39,10 +40,12 @@ func main() {
 	db := internal.NewConnection(Migrations)
 	defer db.Close()
 
-	controller := internal.CreateControler(db.Connection)
-	controller.GetAndSaveIssues()
+	controller := internal.CreateController(db.Connection)
 
-	fmt.Println("data loaded, starting server...")
+	fmt.Println("Start worker...")
+	go controller.Worker()
+
+	fmt.Println("starting server...")
 	startServer()
 }
 

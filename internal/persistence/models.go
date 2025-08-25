@@ -18,3 +18,8 @@ type Issue struct {
 	RepoDescription string
 	StargazersCount sql.NullInt64
 }
+
+type TaskDatum struct {
+	ID      int64
+	LastRun time.Time
+}

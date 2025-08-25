@@ -22,6 +22,7 @@
       nodes {
         nameWithOwner
         description
+        stargazerCount
         issues(states: OPEN, labels: ["help-wanted"], first: 5) {
           nodes {
             title
@@ -59,12 +60,3 @@ alias sqlc="docker run --rm -v $(pwd):/src -w /src sqlc/sqlc"
 ```bash
 docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://help-stars.db" create -ext sql -dir /migrations -seq init_schema
 ```
-
-## Todo list
-
-- [ ] some css
-- [ ] pagination progress
-- [ ] records request in db
-- [ ] send alert
-- [ ] manage rate limiting
-- [ ] sort/discard issues
