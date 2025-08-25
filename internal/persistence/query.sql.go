@@ -51,20 +51,6 @@ func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue
 	return i, err
 }
 
-const createTaskData = `-- name: CreateTaskData :one
-INSERT INTO
-  task_data (id, last_run)
-VALUES
-  (1, ?) RETURNING id, last_run
-`
-
-func (q *Queries) CreateTaskData(ctx context.Context, lastRun time.Time) (TaskDatum, error) {
-	row := q.db.QueryRowContext(ctx, createTaskData, lastRun)
-	var i TaskDatum
-	err := row.Scan(&i.ID, &i.LastRun)
-	return i, err
-}
-
 const deleteIssue = `-- name: DeleteIssue :exec
 DELETE FROM issues
 WHERE
@@ -115,7 +101,7 @@ func (q *Queries) GetIssue(ctx context.Context, url string) (Issue, error) {
 
 const getTaskData = `-- name: GetTaskData :one
 SELECT
-  id, last_run
+  id, last_run, in_progress
 FROM
   task_data
 LIMIT
@@ -125,8 +111,20 @@ LIMIT
 func (q *Queries) GetTaskData(ctx context.Context) (TaskDatum, error) {
 	row := q.db.QueryRowContext(ctx, getTaskData)
 	var i TaskDatum
-	err := row.Scan(&i.ID, &i.LastRun)
+	err := row.Scan(&i.ID, &i.LastRun, &i.InProgress)
 	return i, err
+}
+
+const initTaskData = `-- name: InitTaskData :exec
+INSERT INTO
+  task_data (id, last_run, in_progress)
+VALUES
+  (1, NULL, true) RETURNING id, last_run, in_progress
+`
+
+func (q *Queries) InitTaskData(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, initTaskData)
+	return err
 }
 
 const listIssues = `-- name: ListIssues :many
@@ -169,6 +167,19 @@ func (q *Queries) ListIssues(ctx context.Context) ([]Issue, error) {
 	return items, nil
 }
 
+const taskDataInProgress = `-- name: TaskDataInProgress :exec
+UPDATE task_data
+SET
+  in_progress = true
+WHERE
+  id = 1
+`
+
+func (q *Queries) TaskDataInProgress(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, taskDataInProgress)
+	return err
+}
+
 const updateIssue = `-- name: UpdateIssue :exec
 UPDATE issues
 set
@@ -205,15 +216,16 @@ func (q *Queries) UpdateIssue(ctx context.Context, arg UpdateIssueParams) error 
 	return err
 }
 
-const updateTaskData = `-- name: UpdateTaskData :exec
+const updateTimeTaskData = `-- name: UpdateTimeTaskData :exec
 UPDATE task_data
 SET
-  last_run = ?
+  last_run = ?,
+  in_progress = false
 WHERE
   id = 1
 `
 
-func (q *Queries) UpdateTaskData(ctx context.Context, lastRun time.Time) error {
-	_, err := q.db.ExecContext(ctx, updateTaskData, lastRun)
+func (q *Queries) UpdateTimeTaskData(ctx context.Context, lastRun sql.NullTime) error {
+	_, err := q.db.ExecContext(ctx, updateTimeTaskData, lastRun)
 	return err
 }

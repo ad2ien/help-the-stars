@@ -20,6 +20,7 @@ type Issue struct {
 }
 
 type TaskDatum struct {
-	ID      int64
-	LastRun time.Time
+	ID         int64
+	LastRun    sql.NullTime
+	InProgress sql.NullBool
 }

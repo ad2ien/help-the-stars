@@ -5,7 +5,6 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
-	"io/fs"
 	"log"
 	"net/http"
 
@@ -43,14 +42,6 @@ func (dbConn *DbConnection) Close() {
 }
 
 func ensureSchema(migrations embed.FS, db *sql.DB) error {
-
-	fs, err := fs.Sub(migrations, "migrations")
-	if err != nil {
-		fmt.Println("caca ", err)
-	} else {
-		fmt.Println("ok ", fs)
-		fmt.Println(fs.Open("migrations/000001_init_schema.up.sql"))
-	}
 
 	sourceInstance, err := httpfs.New(http.FS(migrations), "migrations")
 	if err != nil {

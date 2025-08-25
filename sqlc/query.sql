@@ -47,18 +47,26 @@ FROM
 LIMIT
   1;
 
--- name: UpdateTaskData :exec
+-- name: UpdateTimeTaskData :exec
 UPDATE task_data
 SET
-  last_run = ?
+  last_run = ?,
+  in_progress = false
 WHERE
   id = 1;
 
--- name: CreateTaskData :one
+-- name: TaskDataInProgress :exec
+UPDATE task_data
+SET
+  in_progress = true
+WHERE
+  id = 1;
+
+-- name: InitTaskData :exec
 INSERT INTO
-  task_data (id, last_run)
+  task_data (id, last_run, in_progress)
 VALUES
-  (1, ?) RETURNING *;
+  (1, NULL, true) RETURNING *;
 
 -- name: DeleteTaskData :exec
 DELETE FROM task_data

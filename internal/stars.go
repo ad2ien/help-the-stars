@@ -52,7 +52,7 @@ func GetStaredRepos(first int) ([]HelpWantedIssue, error) {
 	i := 0
 	for {
 		var query GhQuery
-		fmt.Print(".")
+		fmt.Print("-")
 
 		err := client.Query(context.Background(), &query, variables)
 		if err != nil {

@@ -58,5 +58,5 @@ alias sqlc="docker run --rm -v $(pwd):/src -w /src sqlc/sqlc"
 ### migrations
 
 ```bash
-docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://help-stars.db" create -ext sql -dir /migrations -seq init_schema
+docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://help-stars.db" create -ext sql -dir /migrations -seq MIGRATION_NAME
 ```
