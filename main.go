@@ -38,12 +38,11 @@ func main() {
 	internal.GetSettings()
 
 	matrix := internal.CreateMatrixClient()
-	matrix.SendMsg("Help the stars is starting...")
 
 	db := internal.NewConnection(Migrations)
 	defer db.Close()
 
-	controller := internal.CreateController(db.Connection)
+	controller := internal.CreateController(db.Connection, matrix)
 
 	fmt.Println("Start worker...")
 	go controller.Worker()

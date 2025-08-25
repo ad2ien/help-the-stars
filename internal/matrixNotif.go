@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"maunium.net/go/mautrix"
@@ -14,7 +15,7 @@ type MatrixClient struct {
 	respLogin *mautrix.RespLogin
 }
 
-func CreateMatrixClient() MatrixClient {
+func CreateMatrixClient() *MatrixClient {
 
 	client, err := mautrix.NewClient(GetSetting("MATRIX_HOMESERVER"),
 		id.UserID(GetSetting("MATRIX_USERNAME")),
@@ -37,15 +38,18 @@ func CreateMatrixClient() MatrixClient {
 	}
 	client.DeviceID = resp.DeviceID
 
-	return MatrixClient{
+	return &MatrixClient{
 		client: client,
 	}
 }
 
-func (c *MatrixClient) SendMsg(issue string) {
+func (c *MatrixClient) Notify(issue *HelpWantedIssue) {
+
+	message := fmt.Sprintf("Help wanted for new issue :\n%s\n%s", issue.Title, issue.Url)
+
 	content := event.MessageEventContent{
 		MsgType: event.MsgText,
-		Body:    issue,
+		Body:    message,
 	}
 	_, err := c.client.SendMessageEvent(context.Background(),
 		id.RoomID(GetSetting("MATRIX_ROOMID")), event.EventMessage, content)
