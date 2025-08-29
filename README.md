@@ -1,19 +1,23 @@
 # Help the stars
 
-## Needs
+![GoLand](https://img.shields.io/badge/GoLand-0f0f0f?&logo=goland&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)
+[![Gitmoji](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg)](https://gitmoji.dev)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI status](https://img.shields.io/github/actions/workflow/status/ad2ien/help-the-stars/build.yml?label=CI&logo=github)](https://github.com/ad2ien/help-the-stars/actions)
 
-- Given a github token and smtp credentials
-- Once a day, check issues of the repo stared by user
-- Filter label `help-wanted` and open
-- If new store them
-- If some close, clear them
-- send a mail / message to a matrix user with link and summary
-- an interface allow to see all the issues and sort them
+## What
+
+Given a github token and matrix credentials
+
+- Once a day, check `help-wanted` issues of the repo stared by the user
+- Update info in an sqlite database
+- Send message to a matrix room with link and title
+- Serves an interface listing open help wanting issues
 
 ## How
 
-- SQLITE
-- watch for rate limiting, display percentage of requests if needed
+Github graphql request
 
 ```graphql
 {
@@ -44,30 +48,36 @@
 }
 ```
 
-## Run
+## dev
+
+Run
 
 ```bash
 go run *.go
 ```
 
-## dev
+Or with docker
+
+```bash
+docker compose up
+```
+
+Generate code after queries modifications
 
 ```bash
 alias sqlc="docker run --rm -v $(pwd):/src -w /src sqlc/sqlc"
+sqlc generate
 ```
 
-### migrations
+Create migration
 
 ```bash
-docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://help-stars.db" create -ext sql -dir /migrations -seq MIGRATION_NAME
+docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://db/help-the-stars.db" create -ext sql -dir /migrations -seq MIGRATION_NAME
 ```
 
 ## TODO
 
-- [ ] CI/CD
-- [ ] command start, help
-- [ ] matrix not mandatory
+- [ ] logging
 - [ ] css
 - [ ] some interactivity with htmx
 - [ ] deploy
-- [ ] doc
