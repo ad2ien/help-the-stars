@@ -3,12 +3,12 @@ package main
 import (
 	"embed"
 	"flag"
-	"fmt"
 	"help-the-stars/internal"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
+
+	"github.com/charmbracelet/log"
 )
 
 //go:embed migrations
@@ -24,8 +24,8 @@ func main() {
 	flag.Parse()
 
 	if *helpFlag {
-		fmt.Println("Usage of Help the stars:")
-		fmt.Println("  - https://github.com/ad2ien/help-the-stars/")
+		log.Info("Usage of Help the stars:")
+		log.Info("  - https://github.com/ad2ien/help-the-stars/")
 		os.Exit(0)
 	}
 
@@ -38,10 +38,10 @@ func main() {
 
 	controller := internal.CreateController(db.Connection, matrix)
 
-	fmt.Println("Start worker...")
+	log.Info("Start worker...")
 	go controller.Worker()
 
-	fmt.Println("Start server...")
+	log.Info("Start server...")
 	startServer(controller)
 }
 
@@ -62,6 +62,6 @@ func startServer(controller *internal.DataController) {
 		}
 	})
 
-	log.Println("Server listening on port 1983")
+	log.Info("Server listening on port 1983")
 	http.ListenAndServe(":1983", nil)
 }

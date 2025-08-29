@@ -1,10 +1,10 @@
 package internal
 
 import (
-	"log"
 	"os"
 	"sync"
 
+	"github.com/charmbracelet/log"
 	"github.com/joho/godotenv"
 )
 
@@ -22,7 +22,7 @@ func GetSettings() {
 func GetSetting(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
-		log.Println("Missing environment variable: " + key)
+		log.Warn("Missing environment variable: " + key)
 		return ""
 	}
 	return value

@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"help-the-stars/internal/persistence"
+
+	"github.com/charmbracelet/log"
 )
 
 var internalSeconds = 3000
@@ -40,18 +41,18 @@ func (d *DataController) GetDataForView() (ThankStarsData, error) {
 }
 
 func (d *DataController) Worker() {
-	fmt.Println("start worker...")
+	log.Info("start worker...")
 
 	initTaskData, err := d.queries.GetTaskData(d.ctx)
 	if err != nil {
-		fmt.Println("Init task data...")
+		log.Info("Init task data...")
 		err2 := d.queries.InitTaskData(d.ctx)
 		if err2 != nil {
 			log.Fatal(err2)
 		}
 	}
 	if initTaskData.InProgress.Valid && initTaskData.InProgress.Bool {
-		fmt.Println("⚠️ Recuperating from bad stop ")
+		log.Info("⚠️ Recuperating from bad stop ")
 	}
 
 	for {
@@ -61,7 +62,7 @@ func (d *DataController) Worker() {
 
 		} else if !taskData.LastRun.Valid ||
 			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour*24) {
-			fmt.Println("worker : time elapsed, get data...")
+			log.Info("worker : time elapsed, get data...")
 			d.GetAndSaveIssues()
 
 		} else {
@@ -75,7 +76,7 @@ func (d *DataController) GetAndSaveIssues() {
 
 	d.queries.TaskDataInProgress(d.ctx)
 
-	fmt.Println("Loading issues...")
+	log.Info("Loading issues...")
 	data, err := GetStaredRepos(50)
 	if err != nil {
 		log.Fatal(err)
@@ -84,20 +85,20 @@ func (d *DataController) GetAndSaveIssues() {
 	news, expired := d.sortNewAndExpired(data)
 
 	for i := 0; i < len(expired); i++ {
-		fmt.Println("Delete an issue ", expired[i].Url)
+		log.Info("Delete an issue ", expired[i].Url)
 		d.queries.DeleteIssue(d.ctx, expired[i].Url)
 	}
 
 	if d.matrixClient != nil {
 		for i := 0; i < len(news); i++ {
-			fmt.Println("Notify an issue ", news[i].Url)
+			log.Info("Notify an issue ", news[i].Url)
 			d.matrixClient.Notify(&news[i])
 		}
 	}
 
 	for i := 0; i < len(data); i++ {
 
-		fmt.Println("Save an issue ", data[i].Url)
+		log.Info("Save an issue ", data[i].Url)
 		d.queries.CreateIssue(d.ctx,
 			mapModelToDbParameter(data[i]))
 	}

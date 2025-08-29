@@ -3,8 +3,8 @@ package internal
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"github.com/charmbracelet/log"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -60,6 +60,6 @@ func (c *MatrixClient) Notify(issue *HelpWantedIssue) {
 	_, err := c.client.SendMessageEvent(context.Background(),
 		id.RoomID(GetSetting("MATRIX_ROOMID")), event.EventMessage, content)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 }
