@@ -11,8 +11,6 @@ import (
 	"os"
 )
 
-var version = "1.0.0"
-
 //go:embed migrations
 var Migrations embed.FS
 
@@ -22,19 +20,12 @@ var templates embed.FS
 func main() {
 
 	helpFlag := flag.Bool("help", false, "Display help information")
-	versionFlag := flag.Bool("version", false, "Display version information")
 
 	flag.Parse()
 
 	if *helpFlag {
 		fmt.Println("Usage of Help the stars:")
-		fmt.Println("  -help\tDisplay help information")
-		fmt.Println("  -version\tDisplay version information")
-		os.Exit(0)
-	}
-
-	if *versionFlag {
-		fmt.Println("Version:", version)
+		fmt.Println("  - https://github.com/ad2ien/help-the-stars/")
 		os.Exit(0)
 	}
 
@@ -50,7 +41,7 @@ func main() {
 	fmt.Println("Start worker...")
 	go controller.Worker()
 
-	fmt.Println("starting server...")
+	fmt.Println("Start server...")
 	startServer(controller)
 }
 
