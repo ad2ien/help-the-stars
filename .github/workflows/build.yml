@@ -1,4 +1,4 @@
-name: Go
+name: Build
 
 on:
   push:
@@ -7,7 +7,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
