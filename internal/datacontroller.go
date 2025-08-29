@@ -88,9 +88,11 @@ func (d *DataController) GetAndSaveIssues() {
 		d.queries.DeleteIssue(d.ctx, expired[i].Url)
 	}
 
-	for i := 0; i < len(news); i++ {
-		fmt.Println("Notify an issue ", news[i].Url)
-		d.matrixClient.Notify(&news[i])
+	if d.matrixClient != nil {
+		for i := 0; i < len(news); i++ {
+			fmt.Println("Notify an issue ", news[i].Url)
+			d.matrixClient.Notify(&news[i])
+		}
 	}
 
 	for i := 0; i < len(data); i++ {

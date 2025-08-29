@@ -22,7 +22,8 @@ func GetSettings() {
 func GetSetting(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
-		log.Fatal("Missing environment variable: " + key)
+		log.Println("Missing environment variable: " + key)
+		return ""
 	}
 	return value
 }

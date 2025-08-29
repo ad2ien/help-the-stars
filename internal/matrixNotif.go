@@ -17,6 +17,12 @@ type MatrixClient struct {
 
 func CreateMatrixClient() *MatrixClient {
 
+	if GetSetting("MATRIX_HOMESERVER") == "" ||
+		GetSetting("MATRIX_USERNAME") == "" ||
+		GetSetting("MATRIX_PASSWORD") == "" {
+		return nil
+	}
+
 	client, err := mautrix.NewClient(GetSetting("MATRIX_HOMESERVER"),
 		id.UserID(GetSetting("MATRIX_USERNAME")),
 		"")
