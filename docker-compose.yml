@@ -1,0 +1,8 @@
+services:
+  help-the-stars:
+    build: .
+    ports:
+      - 1983:1983
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./db:/app/db

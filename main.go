@@ -16,6 +16,9 @@ var version = "1.0.0"
 //go:embed migrations
 var Migrations embed.FS
 
+//go:embed templates
+var templates embed.FS
+
 func main() {
 
 	helpFlag := flag.Bool("help", false, "Display help information")
@@ -53,7 +56,7 @@ func main() {
 
 func startServer(controller *internal.DataController) {
 
-	tmpl := template.Must(template.ParseFiles("templates/index.html"))
+	tmpl := template.Must(template.ParseFS(templates, "templates/index.html"))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 

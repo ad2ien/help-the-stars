@@ -64,9 +64,10 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 
 ## TODO
 
+- [ ] CI/CD
+- [ ] command start, help
 - [ ] matrix not mandatory
 - [ ] css
 - [ ] some interactivity with htmx
-- [ ] CI/CD
 - [ ] deploy
 - [ ] doc

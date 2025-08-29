@@ -15,7 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const dbFileName = "help-stars.db"
+const dbFileName = "db/help-the-stars.db"
 const schemaVersion = 2
 
 type DbConnection struct {
