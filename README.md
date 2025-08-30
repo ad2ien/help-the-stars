@@ -4,7 +4,7 @@
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)
 [![Gitmoji](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg)](https://gitmoji.dev)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![CI status](https://img.shields.io/github/actions/workflow/status/ad2ien/help-the-stars/build.yml?label=CI&logo=github)](https://github.com/ad2ien/help-the-stars/actions)
+[![Build status](https://img.shields.io/github/actions/workflow/status/ad2ien/help-the-stars/build.yml?label=CI&logo=github)](https://github.com/ad2ien/help-the-stars/actions)
 
 ## What
 
