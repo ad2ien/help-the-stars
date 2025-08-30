@@ -91,7 +91,7 @@ func (d *DataController) GetAndSaveIssues() {
 
 	if d.matrixClient != nil {
 		for i := 0; i < len(news); i++ {
-			log.Info("Notify an issue ", news[i].Url)
+			log.Info("Notify an issue " + news[i].Url)
 			d.matrixClient.Notify(&news[i])
 		}
 	}

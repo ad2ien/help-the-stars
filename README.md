@@ -78,6 +78,4 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 ## TODO
 
 - [ ] lint go/docker
-- [ ] css
 - [ ] some interactivity with htmx
-- [ ] deploy

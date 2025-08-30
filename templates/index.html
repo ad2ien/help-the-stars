@@ -2,24 +2,35 @@
 <html>
   <head>
     <title>Help the stars</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    {{/* <script src="https://unpkg.com/htmx.org@1.7.0/dist/htmx.min.js"></script> */}}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
   </head>
-  <script src="https://unpkg.com/htmx.org@1.7.0/dist/htmx.min.js"></script>
-  <body>
-    <h1>Help the stars</h1>
-    <h3>
-    {{if .CurrentlyUpdating}}
-      Currently updating..
-    {{else}}
-      Last update: {{ .LastUpdate }}
-    {{end}}
-    </h3>
 
-    {{ range .Issues }}
-    <h2>{{ .Title }}</h2>
-    <a href="{{ .Url }}">{{ .CreationDate }}</a>
-    <h3>{{ .RepoOwner }} - {{ .StargazersCount }}⭐</h3>
-    <p>{{ printf "%.100s" .IssueDescription }}...</p>
-    <p><i>{{ .RepoDescription }}</i></p>
-    {{ end }}
+  <body>
+    <main class="container">
+      <h1>Help the stars</h1>
+      <p>
+        {{if .CurrentlyUpdating}} Currently updating... {{else}} Last update: {{
+        .LastUpdate | date }} {{end}}
+      </p>
+
+      {{ range .Issues }}
+      <article>
+      <header>{{ .Title }}</header>
+      <p>{{ .RepoDescription }}</p>
+      {{ .RepoOwner }} - {{ .StargazersCount }}⭐
+      <p>
+      <pre>{{ printf "%.200s" .IssueDescription }}...</pre>
+      </p>
+      <footer><small><a href="{{ .Url }}">{{ .Url }}</a></small></footer>
+      </article>
+      {{ end }}
+    </main>
   </body>
 </html>
