@@ -5,9 +5,9 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
-	"log"
 	"net/http"
 
+	"github.com/charmbracelet/log"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
@@ -24,7 +24,13 @@ type DbConnection struct {
 
 func NewConnection(migrationsFs embed.FS) DbConnection {
 
-	conn, err := sql.Open("sqlite3", dbFileName)
+	configDbFile := GetSetting("DB_FILE")
+	if configDbFile == "" {
+		configDbFile = dbFileName
+	}
+	log.Info("DB using file : " + configDbFile)
+
+	conn, err := sql.Open("sqlite3", configDbFile)
 	if err != nil {
 		log.Fatal(err)
 	}
