@@ -4,10 +4,8 @@ import (
 	"embed"
 	"flag"
 	"help-the-stars/internal"
-	"html/template"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -43,32 +41,10 @@ func main() {
 	go controller.Worker()
 
 	log.Info("Start server...")
-	startServer(controller)
-}
+	webpageHandler := internal.CreateWebpageHandler(controller, &templates)
 
-func startServer(controller *internal.DataController) {
-
-	tmpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
-		"date": formatDate,
-	}).ParseFS(templates, "templates/index.html"))
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-
-		data, err := controller.GetDataForView()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			err := tmpl.Execute(w, data)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-		}
-	})
+	http.HandleFunc("/", webpageHandler.HandleWebPage)
 
 	log.Info("Server listening on port 1983")
 	http.ListenAndServe(":1983", nil)
-}
-
-func formatDate(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05")
 }

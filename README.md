@@ -78,4 +78,3 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 ## TODO
 
 - [ ] lint go/docker
-- [ ] some interactivity with htmx

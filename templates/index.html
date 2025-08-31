@@ -5,7 +5,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    {{/* <script src="https://unpkg.com/htmx.org@1.7.0/dist/htmx.min.js"></script> */}}
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
@@ -19,16 +18,13 @@
         {{if .CurrentlyUpdating}} Currently updating... {{else}} Last update: {{
         .LastUpdate | date }} {{end}}
       </p>
-
       {{ range .Issues }}
       <article>
-      <header>{{ .Title }}</header>
-      <p>{{ .RepoDescription }}</p>
-      {{ .RepoOwner }} - {{ .StargazersCount }}⭐
-      <p>
-      <pre>{{ printf "%.200s" .IssueDescription }}...</pre>
-      </p>
-      <footer><small><a href="{{ .Url }}">{{ .Url }}</a></small></footer>
+        <header>{{ .Title }}</header>
+        <p>{{ .RepoDescription }}</p>
+        <p>{{ .RepoOwner }} - {{ .StargazersCount }}⭐</p>
+        <p><pre>{{ printf "%.200s" .IssueDescription }}...</pre></p>
+        <footer><small><a href="{{ .Url }}">{{ .Url }}</a></small></footer>
       </article>
       {{ end }}
     </main>
