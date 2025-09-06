@@ -74,7 +74,11 @@ func (d *DataController) Worker() {
 
 func (d *DataController) GetAndSaveIssues() {
 
-	d.queries.TaskDataInProgress(d.ctx)
+	err := d.queries.TaskDataInProgress(d.ctx)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Info("Loading issues...")
 	data, err := GetStaredRepos(50)
@@ -86,7 +90,10 @@ func (d *DataController) GetAndSaveIssues() {
 
 	for i := 0; i < len(expired); i++ {
 		log.Info("Delete an issue ", expired[i].Url)
-		d.queries.DeleteIssue(d.ctx, expired[i].Url)
+		delErr := d.queries.DeleteIssue(d.ctx, expired[i].Url)
+		if delErr != nil {
+			log.Error("Error deleting issue", delErr)
+		}
 	}
 
 	if d.matrixClient != nil {
@@ -99,8 +106,12 @@ func (d *DataController) GetAndSaveIssues() {
 	for i := 0; i < len(data); i++ {
 
 		log.Info("Save an issue ", data[i].Url)
-		d.queries.CreateIssue(d.ctx,
+		_, createErr := d.queries.CreateIssue(d.ctx,
 			mapModelToDbParameter(data[i]))
+
+		if createErr != nil {
+			log.Error("Error creating issue", createErr)
+		}
 	}
 
 	err = d.queries.UpdateTimeTaskData(d.ctx, sql.NullTime{Time: time.Now(), Valid: true})

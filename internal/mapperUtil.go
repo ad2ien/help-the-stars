@@ -9,8 +9,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []HelpWantedIssue {
 	var helpLookingIssues []HelpWantedIssue
 
 	for _, repo := range query.Viewer.StarredRepositories.Nodes {
-		if repo.Issues.Nodes == nil ||
-			len(repo.Issues.Nodes) == 0 {
+		if len(repo.Issues.Nodes) == 0 {
 			continue
 		}
 		for _, issue := range repo.Issues.Nodes {

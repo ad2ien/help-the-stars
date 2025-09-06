@@ -3,7 +3,6 @@ package internal
 import (
 	"database/sql"
 	"embed"
-	_ "embed"
 	"fmt"
 	"net/http"
 
@@ -44,7 +43,10 @@ func NewConnection(migrationsFs embed.FS) DbConnection {
 }
 
 func (dbConn *DbConnection) Close() {
-	dbConn.Connection.Close()
+	err := dbConn.Connection.Close()
+	if err != nil {
+		log.Error("error closing connection", err)
+	}
 }
 
 func ensureSchema(migrations embed.FS, db *sql.DB) error {

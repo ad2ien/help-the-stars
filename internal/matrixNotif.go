@@ -11,8 +11,7 @@ import (
 )
 
 type MatrixClient struct {
-	client    *mautrix.Client
-	respLogin *mautrix.RespLogin
+	client *mautrix.Client
 }
 
 func CreateMatrixClient() *MatrixClient {

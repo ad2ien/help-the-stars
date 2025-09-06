@@ -46,5 +46,9 @@ func main() {
 	http.HandleFunc("/", webpageHandler.HandleWebPage)
 
 	log.Info("Server listening on port 1983")
-	http.ListenAndServe(":1983", nil)
+	err := http.ListenAndServe(":1983", nil)
+
+	if err != nil {
+		log.Error("Server error", err)
+	}
 }
