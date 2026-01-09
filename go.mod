@@ -7,7 +7,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.32
-	github.com/shurcooL/githubv4 v0.0.0-20240727222349-48295856cce7
 	golang.org/x/oauth2 v0.30.0
 	maunium.net/go/mautrix v0.25.0
 	modernc.org/sqlite v1.38.2
@@ -35,7 +34,6 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
-	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

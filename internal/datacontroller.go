@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"help-the-stars/internal/persistence"
@@ -11,7 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-var internalSeconds = 3000
+const internalSeconds = 3000
 
 type DataController struct {
 	queries      *persistence.Queries
@@ -46,9 +47,9 @@ func (d *DataController) Worker() {
 	initTaskData, err := d.queries.GetTaskData(d.ctx)
 	if err != nil {
 		log.Info("Init task data...")
-		err2 := d.queries.InitTaskData(d.ctx)
-		if err2 != nil {
-			log.Fatal(err2)
+		err = d.queries.InitTaskData(d.ctx)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
 	if initTaskData.InProgress.Valid && initTaskData.InProgress.Bool {
@@ -59,7 +60,6 @@ func (d *DataController) Worker() {
 		taskData, err := d.queries.GetTaskData(d.ctx)
 		if err != nil {
 			log.Fatal(err)
-
 		} else if !taskData.LastRun.Valid ||
 			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour*24) {
 			log.Info("worker : time elapsed, get data...")
@@ -81,36 +81,39 @@ func (d *DataController) GetAndSaveIssues() {
 	}
 
 	log.Info("Loading issues...")
-	data, err := GetStaredRepos(50)
+	data, err := GetStaredRepos()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	news, expired := d.sortNewAndExpired(data)
 
-	for i := 0; i < len(expired); i++ {
+	for i := range expired {
 		log.Info("Delete an issue ", expired[i].Url)
 		delErr := d.queries.DeleteIssue(d.ctx, expired[i].Url)
 		if delErr != nil {
-			log.Error("Error deleting issue", delErr)
+			log.Error("Error deleting issue","error", delErr)
 		}
 	}
 
 	if d.matrixClient != nil {
-		for i := 0; i < len(news); i++ {
+		for i := range news {
 			log.Info("Notify an issue " + news[i].Url)
 			d.matrixClient.Notify(&news[i])
 		}
 	}
 
-	for i := 0; i < len(data); i++ {
-
-		log.Info("Save an issue ", data[i].Url)
+	for i := range data {
+		log.Info("Save an issue " + data[i].Url)
 		_, createErr := d.queries.CreateIssue(d.ctx,
 			mapModelToDbParameter(data[i]))
 
 		if createErr != nil {
-			log.Error("Error creating issue", createErr)
+			if strings.Contains(createErr.Error(), "UNIQUE constraint") {
+				log.Info("Issue already exists")
+			} else {
+				log.Error("Error creating issue", "error", createErr)
+			}
 		}
 	}
 

@@ -45,7 +45,7 @@ func NewConnection(migrationsFs embed.FS) DbConnection {
 func (dbConn *DbConnection) Close() {
 	err := dbConn.Connection.Close()
 	if err != nil {
-		log.Error("error closing connection", err)
+		log.Error("error closing connection", "error", err)
 	}
 }
 

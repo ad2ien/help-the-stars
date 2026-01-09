@@ -3,3 +3,4 @@ build/
 *.db
 help-the-stars
 .cache/
+.zed

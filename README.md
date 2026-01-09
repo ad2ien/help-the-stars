@@ -74,3 +74,8 @@ Create migration
 ```bash
 docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://db/help-the-stars.db" create -ext sql -dir /migrations -seq MIGRATION_NAME
 ```
+
+## todo
+
+- [ ] parametrize labels Junior friendly, good first issue
+- [ ] golangci-lint

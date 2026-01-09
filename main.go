@@ -3,9 +3,9 @@ package main
 import (
 	"embed"
 	"flag"
+	"fmt"
 	"help-the-stars/internal"
 	"net/http"
-	"os"
 
 	"github.com/charmbracelet/log"
 )
@@ -17,16 +17,16 @@ var Migrations embed.FS
 var templates embed.FS
 
 func main() {
+	flag.Usage = func() {
+		fmt.Println("Usage of Help the start ⭐")
+		fmt.Println("  https://github.com/ad2ien/help-the-stars/")
+		fmt.Println("\nFlags:")
+		flag.PrintDefaults()
+	}
 
-	helpFlag := flag.Bool("help", false, "Display help information")
+	debugFlag := flag.Bool("debug", false, "Display debug logs")
 
 	flag.Parse()
-
-	if *helpFlag {
-		log.Info("Usage of Help the stars:")
-		log.Info("  - https://github.com/ad2ien/help-the-stars/")
-		os.Exit(0)
-	}
 
 	internal.GetSettings()
 
@@ -38,6 +38,10 @@ func main() {
 	controller := internal.CreateController(db.Connection, matrix)
 
 	log.Info("Start worker...")
+	if *debugFlag {
+		log.SetLevel(log.DebugLevel)
+	}
+	log.Debug("Debugging on")
 	go controller.Worker()
 
 	log.Info("Start server...")

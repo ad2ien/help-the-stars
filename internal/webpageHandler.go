@@ -46,12 +46,12 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 
 	data, err := wph.dataController.GetDataForView()
 	if err != nil {
-		log.Error("Error getting data:", err)
+		log.Error("Error getting data:", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		err := tmpl.Execute(w, data)
 		if err != nil {
-			log.Error("Error executing template:", err)
+			log.Error("Error executing template:","error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}

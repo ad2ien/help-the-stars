@@ -3,21 +3,24 @@ package internal
 import (
 	"database/sql"
 	"help-the-stars/internal/persistence"
+	"github.com/charmbracelet/log"
 )
 
+// map GhQuery to HelpWantedIssue only if there's an issue
 func mapGhQueryToHelpWantedIssue(query GhQuery) []HelpWantedIssue {
 	var helpLookingIssues []HelpWantedIssue
 
-	for _, repo := range query.Viewer.StarredRepositories.Nodes {
+	for _, repo := range query.Data.Viewer.StarredRepositories.Nodes {
 		if len(repo.Issues.Nodes) == 0 {
 			continue
 		}
+		log.Debug("Processing", "repo", repo.NameWithOwner)
 		for _, issue := range repo.Issues.Nodes {
 			helpWantedIssue := HelpWantedIssue{
 				Title:            string(issue.Title),
 				IssueDescription: string(issue.Body),
-				Url:              string(issue.URL),
-				CreationDate:     issue.CreatedAt.Time,
+				Url:              string(issue.Url),
+				CreationDate:     issue.CreatedAt,
 				RepoOwner:        string(repo.NameWithOwner),
 				RepoDescription:  string(repo.Description),
 				StargazersCount:  int(repo.StargazerCount),
