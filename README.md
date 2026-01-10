@@ -10,10 +10,26 @@
 
 Given a github token and matrix credentials
 
-- Once a day, check `help-wanted` issues of the repo stared by the user
+- Once a day, check configured labels `help-wanted` issues of the repo stared by the user
 - Update info in an sqlite database
 - Send message to a matrix room with link and title
 - Serves an interface listing open help wanting issues
+
+## Configuration
+
+```.env
+GITHUB_TOKEN=
+
+MATRIX_HOMESERVER=
+MATRIX_USERNAME=
+MATRIX_PASSWORD=
+MATRIX_ROOMID = 
+
+DB_FILE=
+
+# coma separated labels with quotes to look for
+LABELS='"help-wanted","junior friendly","good first issue"'
+```
 
 ## How
 
@@ -27,7 +43,7 @@ Github graphql request
         nameWithOwner
         description
         stargazerCount
-        issues(states: OPEN, labels: ["help-wanted"], first: 5) {
+        issues(states: OPEN, labels: ["$labels"], first: 5) {
           nodes {
             title
             url
@@ -74,8 +90,3 @@ Create migration
 ```bash
 docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://db/help-the-stars.db" create -ext sql -dir /migrations -seq MIGRATION_NAME
 ```
-
-## todo
-
-- [ ] parametrize labels Junior friendly, good first issue
-- [ ] golangci-lint

@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 	"time"
 
@@ -66,7 +65,7 @@ func (d *DataController) Worker() {
 			d.GetAndSaveIssues()
 
 		} else {
-			fmt.Print(".")
+			log.Debug(".")
 			time.Sleep(time.Duration(internalSeconds) * time.Millisecond)
 		}
 	}

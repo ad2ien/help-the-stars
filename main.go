@@ -20,6 +20,12 @@ func main() {
 	flag.Usage = func() {
 		fmt.Println("Usage of Help the start ⭐")
 		fmt.Println("  https://github.com/ad2ien/help-the-stars/")
+		fmt.Println(".env example :")
+		fmt.Println("\tMATRIX_TOKEN=your-matrix-token")
+		fmt.Println("\tMATRIX_USERID=your-matrix-userid")
+		fmt.Println("\tMATRIX_ROOMID=your-matrix-roomid")
+		fmt.Println("\tDB_FILE=db/help-the-stars-dev.db")
+		fmt.Println("\tLABELS='\"help-wanted\",\"junior friendly\",\"good first issue\"'")
 		fmt.Println("\nFlags:")
 		flag.PrintDefaults()
 	}

@@ -14,6 +14,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const MAX_RETRY = 3
+const BACKOFF_DELAY = 10 * time.Second
+const MAX_ISSUES_PER_REPO = 5
+
 type GhIssue struct {
 	Title     string
 	Url       string
@@ -44,9 +48,9 @@ type GhQuery struct {
 	}
 }
 
-const graphqlUrl = "https://api.github.com/graphql"
+const GRAPHQL_URL = "https://api.github.com/graphql"
 
-const graphqlTemplate = `
+const GRAPHQL_TEMPLATE = `
 {
   viewer {
     starredRepositories(first: 50, after: "{{.RepoCursor}}") {
@@ -54,7 +58,7 @@ const graphqlTemplate = `
         nameWithOwner
         description
         stargazerCount
-        issues(states: OPEN, labels: ["help-wanted"], first: 5) {
+        issues(states: OPEN, labels: [{{.Labels}}], first: {{.MaxIssues}}) {
           nodes {
             title
             labels(first: 5) {
@@ -81,14 +85,19 @@ const graphqlTemplate = `
   }
 }
 `
+
 // Parse the template once at package initialization
-var tmpl = template.Must(template.New("graphql").Parse(graphqlTemplate))
+var tmpl = template.Must(template.New("graphql").Parse(GRAPHQL_TEMPLATE))
 
 func buildQueryFromTemplate(repoCursor string) (string, error) {
 	data := struct {
 		RepoCursor string
+		Labels     string
+		MaxIssues  int
 	}{
 		RepoCursor: repoCursor,
+		Labels:     GetSetting("LABELS"),
+		MaxIssues:  MAX_ISSUES_PER_REPO,
 	}
 
 	var query bytes.Buffer
@@ -145,7 +154,7 @@ func fetchQueryResults(cursor string) (GhQuery, error) {
 	}
 
 	// Create the HTTP request
-	req, err := http.NewRequest("POST", graphqlUrl, bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", GRAPHQL_URL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		log.Fatalf("Error creating request: %v", err)
 	}
@@ -154,11 +163,11 @@ func fetchQueryResults(cursor string) (GhQuery, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send the request
-	resp, err := httpClient.Do(req)
+	resp, err := doWithRetry(httpClient, req)
 	if err != nil {
 		log.Fatalf("Error sending request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	// Read the response
 	body, err := io.ReadAll(resp.Body)
@@ -173,4 +182,30 @@ func fetchQueryResults(cursor string) (GhQuery, error) {
 	}
 
 	return queryResult, nil
+}
+
+func doWithRetry(http *http.Client, req *http.Request) (*http.Response, error) {
+	i := 1
+	for {
+		resp, err := http.Do(req)
+		if err == nil {
+			if resp.StatusCode >= 500 {
+				log.Fatalf("Github server error: %d", resp.StatusCode)
+			}
+			return resp, nil
+		}
+
+		i++
+		if i >= MAX_RETRY {
+			return nil, err
+		}
+		time.Sleep(BACKOFF_DELAY * time.Duration(i))
+
+	}
+}
+
+func closeBody(body io.ReadCloser) {
+	if err := body.Close(); err != nil {
+		log.Warn("Error closing response body: %v", err)
+	}
 }
