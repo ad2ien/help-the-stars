@@ -7,13 +7,17 @@ type HelpWantedIssue struct {
 	Title            string
 	IssueDescription string
 	CreationDate     time.Time
-	RepoOwner        string
-	RepoDescription  string
-	StargazersCount  int
+}
+
+type Repo struct {
+	RepoOwner       string
+	RepoDescription string
+	StargazersCount int
+	Issues          []HelpWantedIssue
 }
 
 type ThankStarsData struct {
-	Issues            []HelpWantedIssue
+	Repos             []Repo
 	LastUpdate        time.Time
 	CurrentlyUpdating bool
 }

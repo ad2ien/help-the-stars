@@ -109,8 +109,8 @@ func buildQueryFromTemplate(repoCursor string) (string, error) {
 	return query.String(), nil
 }
 
-func GetStaredRepos() ([]HelpWantedIssue, error) {
-	result := make([]HelpWantedIssue, 0)
+func GetStaredRepos() ([]Repo, error) {
+	result := make([]Repo, 0)
 	cursor := ""
 	for {
 		log.Debug("Api call", "cursor", cursor)

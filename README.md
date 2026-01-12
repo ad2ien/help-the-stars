@@ -90,3 +90,11 @@ Create migration
 ```bash
 docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations -database "sqlite://db/help-the-stars.db" create -ext sql -dir /migrations -seq MIGRATION_NAME
 ```
+
+## TODO
+
+- [ ] env -> args and check args
+- [ ] add languages
+- [ ] interface : list projects / filter
+- [ ] repo link to filtered issues
+- [ ] refactor database : repo / issues

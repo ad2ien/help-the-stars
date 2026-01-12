@@ -11,7 +11,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-const internalSeconds = 3000
+const CHECK_INTERVAL_S = 3000
+const DATA_REFRESH_INTERVAL_H = 2
 
 type DataController struct {
 	queries      *persistence.Queries
@@ -37,7 +38,7 @@ func (d *DataController) GetDataForView() (ThankStarsData, error) {
 	if err != nil {
 		return ThankStarsData{}, err
 	}
-	return mapDbResultToViewData(issues, taskData), nil
+	return mapDbResultToViewModel(issues, taskData), nil
 }
 
 func (d *DataController) Worker() {
@@ -60,13 +61,13 @@ func (d *DataController) Worker() {
 		if err != nil {
 			log.Fatal(err)
 		} else if !taskData.LastRun.Valid ||
-			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour*24) {
+			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour*DATA_REFRESH_INTERVAL_H) {
 			log.Info("worker : time elapsed, get data...")
 			d.GetAndSaveIssues()
 
 		} else {
 			log.Debug(".")
-			time.Sleep(time.Duration(internalSeconds) * time.Millisecond)
+			time.Sleep(time.Duration(CHECK_INTERVAL_S) * time.Millisecond)
 		}
 	}
 }
@@ -80,18 +81,23 @@ func (d *DataController) GetAndSaveIssues() {
 	}
 
 	log.Info("Loading issues...")
-	data, err := GetStaredRepos()
+	repos, err := GetStaredRepos()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	news, expired := d.sortNewAndExpired(data)
+	issues := flattenIssues(repos)
+	if issues == nil {
+		log.Fatal("No issues found, something went wrong")
+		return
+	}
+	news, expired := d.sortNewAndExpired(issues)
 
 	for i := range expired {
-		log.Info("Delete an issue ", expired[i].Url)
+		log.Info("Delete an issue ", "url", expired[i].Url)
 		delErr := d.queries.DeleteIssue(d.ctx, expired[i].Url)
 		if delErr != nil {
-			log.Error("Error deleting issue","error", delErr)
+			log.Error("Error deleting issue", "error", delErr)
 		}
 	}
 
@@ -102,16 +108,18 @@ func (d *DataController) GetAndSaveIssues() {
 		}
 	}
 
-	for i := range data {
-		log.Info("Save an issue " + data[i].Url)
-		_, createErr := d.queries.CreateIssue(d.ctx,
-			mapModelToDbParameter(data[i]))
+	for _, r := range repos {
+		for _, i := range r.Issues {
+			log.Info("Save an issue " + i.Url)
+			_, createErr := d.queries.CreateIssue(d.ctx,
+				mapModelToDbParameter(i, r))
 
-		if createErr != nil {
-			if strings.Contains(createErr.Error(), "UNIQUE constraint") {
-				log.Info("Issue already exists")
-			} else {
-				log.Error("Error creating issue", "error", createErr)
+			if createErr != nil {
+				if strings.Contains(createErr.Error(), "UNIQUE constraint") {
+					log.Info("Issue already exists")
+				} else {
+					log.Error("Error creating issue", "error", createErr)
+				}
 			}
 		}
 	}
@@ -123,15 +131,12 @@ func (d *DataController) GetAndSaveIssues() {
 }
 
 // return new issue to notify and expired one to delete form base
-func (d *DataController) sortNewAndExpired(ghIssues []HelpWantedIssue) ([]HelpWantedIssue, []HelpWantedIssue) {
+func (d *DataController) sortNewAndExpired(ghIssues []HelpWantedIssue) (new []HelpWantedIssue, expired []HelpWantedIssue) {
 	issues, err := d.queries.ListIssues(d.ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	issuesFromDb := mapIssuesDbToModels(issues)
-
-	expired := []HelpWantedIssue{}
-	new := []HelpWantedIssue{}
+	issuesFromDb := mapDbIssuesToViewIssues(issues)
 
 	for _, ghIssue := range ghIssues {
 		found := false

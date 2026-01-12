@@ -18,13 +18,11 @@
         {{if .CurrentlyUpdating}} Currently updating... {{else}} Last update: {{
         .LastUpdate | date }} {{end}}
       </p>
-      {{ range .Issues }}
+      {{ range .Repos }}
       <article>
-        <header>{{ .Title }}</header>
+        <header>{{ .RepoOwner }}</header>
         <p>{{ .RepoDescription }}</p>
-        <p>{{ .RepoOwner }} - {{ .StargazersCount }}⭐</p>
-        <p><pre>{{ printf "%.200s" .IssueDescription }}...</pre></p>
-        <footer><small><a href="{{ .Url }}">{{ .Url }}</a></small></footer>
+        <p>{{ .StargazersCount }}⭐</p>
       </article>
       {{ end }}
     </main>

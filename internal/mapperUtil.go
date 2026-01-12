@@ -3,75 +3,105 @@ package internal
 import (
 	"database/sql"
 	"help-the-stars/internal/persistence"
+
 	"github.com/charmbracelet/log"
 )
 
 // map GhQuery to HelpWantedIssue only if there's an issue
-func mapGhQueryToHelpWantedIssue(query GhQuery) []HelpWantedIssue {
-	var helpLookingIssues []HelpWantedIssue
+func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
+	var repos []Repo
 
 	for _, repo := range query.Data.Viewer.StarredRepositories.Nodes {
 		if len(repo.Issues.Nodes) == 0 {
 			continue
 		}
 		log.Debug("Processing", "repo", repo.NameWithOwner)
+		r := Repo{
+			RepoOwner:       repo.NameWithOwner,
+			RepoDescription: repo.Description,
+			StargazersCount: repo.StargazerCount,
+		}
 		for _, issue := range repo.Issues.Nodes {
 			helpWantedIssue := HelpWantedIssue{
 				Title:            string(issue.Title),
 				IssueDescription: string(issue.Body),
 				Url:              string(issue.Url),
 				CreationDate:     issue.CreatedAt,
-				RepoOwner:        string(repo.NameWithOwner),
-				RepoDescription:  string(repo.Description),
-				StargazersCount:  int(repo.StargazerCount),
 			}
-			helpLookingIssues = append(helpLookingIssues, helpWantedIssue)
+			r.Issues = append(r.Issues, helpWantedIssue)
 		}
+		repos = append(repos, r)
 	}
 
-	return helpLookingIssues
+	return repos
 }
 
-func mapModelToDbParameter(issue HelpWantedIssue) persistence.CreateIssueParams {
+func mapModelToDbParameter(issue HelpWantedIssue, repo Repo) persistence.CreateIssueParams {
 	return persistence.CreateIssueParams{
 		Url:             issue.Url,
 		Title:           issue.Title,
 		Description:     issue.IssueDescription,
-		RepoWithOwner:   issue.RepoOwner,
+		RepoWithOwner:   repo.RepoOwner,
+		RepoDescription: repo.RepoDescription,
 		CreationDate:    issue.CreationDate,
-		StargazersCount: sql.NullInt64{Int64: int64(issue.StargazersCount), Valid: true},
+		StargazersCount: sql.NullInt64{Int64: int64(repo.StargazersCount), Valid: true},
 	}
 }
 
-func mapDbResultToViewData(issues []persistence.Issue, taskData persistence.TaskDatum) ThankStarsData {
+func mapDbResultToViewModel(issues []persistence.Issue, taskData persistence.TaskDatum) ThankStarsData {
 	return ThankStarsData{
-		Issues:            mapIssuesDbToModels(issues),
+		Repos:             mapDbIssuesToViewRepos(issues),
 		LastUpdate:        taskData.LastRun.Time,
 		CurrentlyUpdating: taskData.InProgress.Valid && taskData.InProgress.Bool,
 	}
 }
 
-func mapIssuesDbToModels(issues []persistence.Issue) []HelpWantedIssue {
+func mapDbIssuesToViewRepos(issues []persistence.Issue) []Repo {
+	repoMap := make(map[string]Repo)
+	for _, issue := range issues {
+		if _, ok := repoMap[issue.RepoWithOwner]; !ok {
+			repoMap[issue.RepoWithOwner] = Repo{
+				RepoOwner:       issue.RepoWithOwner,
+				RepoDescription: issue.RepoDescription,
+				StargazersCount: int(issue.StargazersCount.Int64),
+				Issues: []HelpWantedIssue{
+					mapDbIssueToViewIssue(issue),
+				},
+			}
+			continue
+		}
+		repo := repoMap[issue.RepoWithOwner]
+		repo.Issues = append(repo.Issues, mapDbIssueToViewIssue(issue))
+		repoMap[issue.RepoWithOwner] = repo
+	}
+	result := make([]Repo, 0, len(repoMap))
+	for _, repo := range repoMap {
+		result = append(result, repo)
+	}
+	return result
+}
+
+func mapDbIssueToViewIssue(issue persistence.Issue) HelpWantedIssue {
+	return HelpWantedIssue{
+		Title:            issue.Title,
+		IssueDescription: issue.Description,
+		Url:              issue.Url,
+		CreationDate:     issue.CreationDate,
+	}
+}
+
+func mapDbIssuesToViewIssues(issues []persistence.Issue) []HelpWantedIssue {
 	mappedIssues := make([]HelpWantedIssue, len(issues))
 	for i, issue := range issues {
-		mappedIssues[i] = mapIssueDbToModel(issue)
+		mappedIssues[i] = mapDbIssueToViewIssue(issue)
 	}
 	return mappedIssues
 }
 
-func mapIssueDbToModel(issue persistence.Issue) HelpWantedIssue {
-	stargazerCount := 0
-	if issue.StargazersCount.Valid {
-		stargazerCount = int(issue.StargazersCount.Int64)
+func flattenIssues(repos []Repo) []HelpWantedIssue {
+	var issues []HelpWantedIssue
+	for _, repo := range repos {
+		issues = append(issues, repo.Issues...)
 	}
-	return HelpWantedIssue{
-		Url:              issue.Url,
-		Title:            issue.Title,
-		IssueDescription: issue.Description,
-		CreationDate:     issue.CreationDate,
-		RepoOwner:        issue.RepoWithOwner,
-		RepoDescription:  issue.RepoDescription,
-		StargazersCount:  stargazerCount,
-	}
-
+	return issues
 }
