@@ -95,6 +95,7 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 
 - [ ] env -> args and check args
 - [ ] add languages
+- [ ] display last issue creation date
 - [ ] interface : list projects / filter
 - [ ] repo link to filtered issues
 - [ ] refactor database : repo / issues

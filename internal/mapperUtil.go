@@ -3,6 +3,7 @@ package internal
 import (
 	"database/sql"
 	"help-the-stars/internal/persistence"
+	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -21,6 +22,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 			RepoDescription: repo.Description,
 			StargazersCount: repo.StargazerCount,
 		}
+		lastCreationTime := time.Time{}
 		for _, issue := range repo.Issues.Nodes {
 			helpWantedIssue := HelpWantedIssue{
 				Title:            string(issue.Title),
@@ -29,7 +31,12 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 				CreationDate:     issue.CreatedAt,
 			}
 			r.Issues = append(r.Issues, helpWantedIssue)
+
+			if helpWantedIssue.CreationDate.After(lastCreationTime) {
+				lastCreationTime = helpWantedIssue.CreationDate
+			}
 		}
+		r.LastIssueCreationTime = lastCreationTime
 		repos = append(repos, r)
 	}
 

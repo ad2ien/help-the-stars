@@ -10,10 +10,11 @@ type HelpWantedIssue struct {
 }
 
 type Repo struct {
-	RepoOwner       string
-	RepoDescription string
-	StargazersCount int
-	Issues          []HelpWantedIssue
+	RepoOwner             string
+	RepoDescription       string
+	StargazersCount       int
+	LastIssueCreationTime time.Time
+	Issues                []HelpWantedIssue
 }
 
 type ThankStarsData struct {

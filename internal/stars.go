@@ -32,6 +32,13 @@ type GhRepository struct {
 	Issues         struct {
 		Nodes []GhIssue
 	}
+	Languages struct{
+		Nodes []GhLanguage
+	}
+}
+
+type GhLanguage struct {
+	Name string
 }
 
 type GhQuery struct {
@@ -58,6 +65,11 @@ const GRAPHQL_TEMPLATE = `
         nameWithOwner
         description
         stargazerCount
+        languages(first:1){
+          nodes{
+            name
+          }
+        }
         issues(states: OPEN, labels: [{{.Labels}}], first: {{.MaxIssues}}) {
           nodes {
             title
