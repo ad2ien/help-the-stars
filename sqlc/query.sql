@@ -18,21 +18,9 @@ ORDER BY
 
 -- name: CreateIssue :one
 INSERT INTO
-  issues (url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count)
+  issues (url, repo_with_owner, title, description, creation_date)
 VALUES
-  (?, ?, ?, ?, ?, ?, ?) RETURNING *;
-
--- name: UpdateIssue :exec
-UPDATE issues
-set
-  repo_with_owner = ?,
-  title = ?,
-  description = ?,
-  creation_date = ?,
-  repo_description = ?,
-  stargazers_count = ?
-WHERE
-  url = ?;
+  (?, ?, ?, ?, ?) RETURNING *;
 
 -- name: DeleteIssue :exec
 DELETE FROM issues
@@ -72,3 +60,20 @@ VALUES
 DELETE FROM task_data
 WHERE
   id = 1;
+
+-- name: ListRepos :many
+SELECT
+  *
+FROM
+  repos;
+
+-- name: CreateRepo :one
+INSERT INTO
+  repos (repo_with_owner, description, stargazers_count, language)
+VALUES
+  (?, ?, ?, ?) RETURNING *;
+
+-- name: DeleteRepo :exec
+DELETE FROM repos
+WHERE
+  repo_with_owner = ?;

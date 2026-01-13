@@ -13,19 +13,17 @@ import (
 
 const createIssue = `-- name: CreateIssue :one
 INSERT INTO
-  issues (url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count)
+  issues (url, repo_with_owner, title, description, creation_date)
 VALUES
-  (?, ?, ?, ?, ?, ?, ?) RETURNING url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count
+  (?, ?, ?, ?, ?) RETURNING url, repo_with_owner, title, description, creation_date
 `
 
 type CreateIssueParams struct {
-	Url             string
-	RepoWithOwner   string
-	Title           string
-	Description     string
-	CreationDate    time.Time
-	RepoDescription string
-	StargazersCount sql.NullInt64
+	Url           string
+	RepoWithOwner string
+	Title         string
+	Description   string
+	CreationDate  time.Time
 }
 
 func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue, error) {
@@ -35,8 +33,6 @@ func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue
 		arg.Title,
 		arg.Description,
 		arg.CreationDate,
-		arg.RepoDescription,
-		arg.StargazersCount,
 	)
 	var i Issue
 	err := row.Scan(
@@ -45,8 +41,37 @@ func (q *Queries) CreateIssue(ctx context.Context, arg CreateIssueParams) (Issue
 		&i.Title,
 		&i.Description,
 		&i.CreationDate,
-		&i.RepoDescription,
+	)
+	return i, err
+}
+
+const createRepo = `-- name: CreateRepo :one
+INSERT INTO
+  repos (repo_with_owner, description, stargazers_count, language)
+VALUES
+  (?, ?, ?, ?) RETURNING repo_with_owner, description, stargazers_count, language
+`
+
+type CreateRepoParams struct {
+	RepoWithOwner   string
+	Description     sql.NullString
+	StargazersCount sql.NullInt64
+	Language        sql.NullString
+}
+
+func (q *Queries) CreateRepo(ctx context.Context, arg CreateRepoParams) (Repo, error) {
+	row := q.db.QueryRowContext(ctx, createRepo,
+		arg.RepoWithOwner,
+		arg.Description,
+		arg.StargazersCount,
+		arg.Language,
+	)
+	var i Repo
+	err := row.Scan(
+		&i.RepoWithOwner,
+		&i.Description,
 		&i.StargazersCount,
+		&i.Language,
 	)
 	return i, err
 }
@@ -59,6 +84,17 @@ WHERE
 
 func (q *Queries) DeleteIssue(ctx context.Context, url string) error {
 	_, err := q.db.ExecContext(ctx, deleteIssue, url)
+	return err
+}
+
+const deleteRepo = `-- name: DeleteRepo :exec
+DELETE FROM repos
+WHERE
+  repo_with_owner = ?
+`
+
+func (q *Queries) DeleteRepo(ctx context.Context, repoWithOwner string) error {
+	_, err := q.db.ExecContext(ctx, deleteRepo, repoWithOwner)
 	return err
 }
 
@@ -75,7 +111,7 @@ func (q *Queries) DeleteTaskData(ctx context.Context) error {
 
 const getIssue = `-- name: GetIssue :one
 SELECT
-  url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count
+  url, repo_with_owner, title, description, creation_date
 FROM
   issues
 WHERE
@@ -93,8 +129,6 @@ func (q *Queries) GetIssue(ctx context.Context, url string) (Issue, error) {
 		&i.Title,
 		&i.Description,
 		&i.CreationDate,
-		&i.RepoDescription,
-		&i.StargazersCount,
 	)
 	return i, err
 }
@@ -129,7 +163,7 @@ func (q *Queries) InitTaskData(ctx context.Context) error {
 
 const listIssues = `-- name: ListIssues :many
 SELECT
-  url, repo_with_owner, title, description, creation_date, repo_description, stargazers_count
+  url, repo_with_owner, title, description, creation_date
 FROM
   issues
 ORDER BY
@@ -151,8 +185,41 @@ func (q *Queries) ListIssues(ctx context.Context) ([]Issue, error) {
 			&i.Title,
 			&i.Description,
 			&i.CreationDate,
-			&i.RepoDescription,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRepos = `-- name: ListRepos :many
+SELECT
+  repo_with_owner, description, stargazers_count, language
+FROM
+  repos
+`
+
+func (q *Queries) ListRepos(ctx context.Context) ([]Repo, error) {
+	rows, err := q.db.QueryContext(ctx, listRepos)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Repo
+	for rows.Next() {
+		var i Repo
+		if err := rows.Scan(
+			&i.RepoWithOwner,
+			&i.Description,
 			&i.StargazersCount,
+			&i.Language,
 		); err != nil {
 			return nil, err
 		}
@@ -177,42 +244,6 @@ WHERE
 
 func (q *Queries) TaskDataInProgress(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, taskDataInProgress)
-	return err
-}
-
-const updateIssue = `-- name: UpdateIssue :exec
-UPDATE issues
-set
-  repo_with_owner = ?,
-  title = ?,
-  description = ?,
-  creation_date = ?,
-  repo_description = ?,
-  stargazers_count = ?
-WHERE
-  url = ?
-`
-
-type UpdateIssueParams struct {
-	RepoWithOwner   string
-	Title           string
-	Description     string
-	CreationDate    time.Time
-	RepoDescription string
-	StargazersCount sql.NullInt64
-	Url             string
-}
-
-func (q *Queries) UpdateIssue(ctx context.Context, arg UpdateIssueParams) error {
-	_, err := q.db.ExecContext(ctx, updateIssue,
-		arg.RepoWithOwner,
-		arg.Title,
-		arg.Description,
-		arg.CreationDate,
-		arg.RepoDescription,
-		arg.StargazersCount,
-		arg.Url,
-	)
 	return err
 }
 

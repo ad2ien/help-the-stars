@@ -10,13 +10,18 @@ import (
 )
 
 type Issue struct {
-	Url             string
+	Url           string
+	RepoWithOwner string
+	Title         string
+	Description   string
+	CreationDate  time.Time
+}
+
+type Repo struct {
 	RepoWithOwner   string
-	Title           string
-	Description     string
-	CreationDate    time.Time
-	RepoDescription string
+	Description     sql.NullString
 	StargazersCount sql.NullInt64
+	Language        sql.NullString
 }
 
 type TaskDatum struct {

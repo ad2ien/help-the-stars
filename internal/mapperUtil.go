@@ -17,10 +17,17 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 			continue
 		}
 		log.Debug("Processing", "repo", repo.NameWithOwner)
+
+		lang := ""
+		if len(repo.Languages.Nodes) > 0 {
+			lang = repo.Languages.Nodes[0].Name
+		}
+
 		r := Repo{
 			RepoOwner:       repo.NameWithOwner,
 			RepoDescription: repo.Description,
 			StargazersCount: repo.StargazerCount,
+			Language:        lang,
 		}
 		lastCreationTime := time.Time{}
 		for _, issue := range repo.Issues.Nodes {
@@ -43,49 +50,66 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 	return repos
 }
 
-func mapModelToDbParameter(issue HelpWantedIssue, repo Repo) persistence.CreateIssueParams {
+func mapModelToIssueDbParameter(issue HelpWantedIssue, repo Repo) persistence.CreateIssueParams {
 	return persistence.CreateIssueParams{
-		Url:             issue.Url,
-		Title:           issue.Title,
-		Description:     issue.IssueDescription,
-		RepoWithOwner:   repo.RepoOwner,
-		RepoDescription: repo.RepoDescription,
-		CreationDate:    issue.CreationDate,
-		StargazersCount: sql.NullInt64{Int64: int64(repo.StargazersCount), Valid: true},
+		Url:           issue.Url,
+		Title:         issue.Title,
+		Description:   issue.IssueDescription,
+		RepoWithOwner: repo.RepoOwner,
+		CreationDate:  issue.CreationDate,
 	}
 }
 
-func mapDbResultToViewModel(issues []persistence.Issue, taskData persistence.TaskDatum) ThankStarsData {
+func mapModelToRepoDbParameter(repo Repo) persistence.CreateRepoParams {
+	return persistence.CreateRepoParams{
+		RepoWithOwner:   repo.RepoOwner,
+		Description:     sql.NullString{String: repo.RepoDescription, Valid: true},
+		StargazersCount: sql.NullInt64{Int64: int64(repo.StargazersCount), Valid: true},
+		Language:        sql.NullString{String: repo.Language, Valid: true},
+	}
+}
+
+func mapDbResultToViewModel(
+	issues []persistence.Issue,
+	repos []persistence.Repo,
+	taskData persistence.TaskDatum) ThankStarsData {
 	return ThankStarsData{
-		Repos:             mapDbIssuesToViewRepos(issues),
+		Repos:             mapDbIssuesToViewRepos(issues, repos),
 		LastUpdate:        taskData.LastRun.Time,
 		CurrentlyUpdating: taskData.InProgress.Valid && taskData.InProgress.Bool,
 	}
 }
 
-func mapDbIssuesToViewRepos(issues []persistence.Issue) []Repo {
-	repoMap := make(map[string]Repo)
-	for _, issue := range issues {
-		if _, ok := repoMap[issue.RepoWithOwner]; !ok {
-			repoMap[issue.RepoWithOwner] = Repo{
-				RepoOwner:       issue.RepoWithOwner,
-				RepoDescription: issue.RepoDescription,
-				StargazersCount: int(issue.StargazersCount.Int64),
-				Issues: []HelpWantedIssue{
-					mapDbIssueToViewIssue(issue),
-				},
-			}
-			continue
+func mapDbIssuesToViewRepos(issues []persistence.Issue, repos []persistence.Repo) []Repo {
+
+	result := make([]Repo, len(repos))
+	for i, repo := range repos {
+
+		filteredIssues, lastIssueDate := findIssuesAndLastIssueDateByRepoOwner(repo.RepoWithOwner, issues)
+		result[i] = Repo{
+			RepoOwner:       repo.RepoWithOwner,
+			RepoDescription: repo.Description.String,
+			StargazersCount: int(repo.StargazersCount.Int64),
+			Language:        repo.Language.String,
+			Issues:          filteredIssues,
+			LastIssueCreationTime:   lastIssueDate,
 		}
-		repo := repoMap[issue.RepoWithOwner]
-		repo.Issues = append(repo.Issues, mapDbIssueToViewIssue(issue))
-		repoMap[issue.RepoWithOwner] = repo
 	}
-	result := make([]Repo, 0, len(repoMap))
-	for _, repo := range repoMap {
-		result = append(result, repo)
-	}
+
 	return result
+}
+
+func findIssuesAndLastIssueDateByRepoOwner(repoOwner string, issues []persistence.Issue) (filteredIssues []HelpWantedIssue,
+	lastIssueDate time.Time) {
+	for _, issue := range issues {
+		if issue.RepoWithOwner == repoOwner {
+			filteredIssues = append(filteredIssues, mapDbIssueToViewIssue(issue))
+			if issue.CreationDate.After(lastIssueDate) {
+				lastIssueDate = issue.CreationDate
+			}
+		}
+	}
+	return filteredIssues, lastIssueDate
 }
 
 func mapDbIssueToViewIssue(issue persistence.Issue) HelpWantedIssue {

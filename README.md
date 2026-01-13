@@ -81,7 +81,7 @@ docker compose up
 Generate code after queries modifications
 
 ```bash
-alias sqlc="docker run --rm -v $(pwd):/src -w /src sqlc/sqlc"
+alias sqlc="docker run --rm -v $PWD:/src -w /src sqlc/sqlc"
 sqlc generate
 ```
 
@@ -94,8 +94,4 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 ## TODO
 
 - [ ] env -> args and check args
-- [ ] add languages
-- [ ] display last issue creation date
-- [ ] interface : list projects / filter
-- [ ] repo link to filtered issues
-- [ ] refactor database : repo / issues
+- [ ] specify user

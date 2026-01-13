@@ -1,14 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <title>Help the stars</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-    />
+    <link rel="stylesheet" href="/static/css/pico.min.css" />
+    <link rel="stylesheet" href="/static/css/tablesort.css" />
+    <script src="/static/js/tablesort.min.js"></script>
+    <script src="/static/js/tablesort.number.min.js"></script>
+    <script src="/static/js/search.js"></script>
   </head>
 
   <body>
@@ -18,13 +19,48 @@
         {{if .CurrentlyUpdating}} Currently updating... {{else}} Last update: {{
         .LastUpdate | date }} {{end}}
       </p>
-      {{ range .Repos }}
-      <article>
-        <header>{{ .RepoOwner }}</header>
-        <p>{{ .RepoDescription }}</p>
-        <p>{{ .StargazersCount }}⭐</p>
-      </article>
-      {{ end }}
+
+      <!-- Add filter input -->
+      <input
+        type="text"
+        id="filter-input"
+        placeholder="Filter by repository..."
+        onkeyup="filterTable()"
+      />
+
+      <!-- Replace articles with a table -->
+      <table id="repos-table">
+        <thead>
+          <tr>
+            <th data-sort-method="string">Repository</th>
+            <th data-sort-method="string">Description</th>
+            <th data-sort-method="string">Code</th>
+            <th data-sort-method="number">⭐</th>
+            <th data-sort-method="string">Last issue</th>
+            <th data-sort-method="none">Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .Repos }}
+          <tr>
+            <td>{{ .RepoOwner }}</td>
+            <td>{{ .RepoDescription }}</td>
+            <td>{{ .Language }}</td>
+            <td>{{ .StargazersCount }}</td>
+            <td>{{ .LastIssueCreationTime | date }}</td>
+            <td>
+              <a href="{{ .RepoOwner | buildHelpIssuesLink }}" target="_blank"
+                >Open</a
+              >
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
     </main>
   </body>
+  <script>
+    // Initialize tablesort
+    new Tablesort(document.getElementById('repos-table'));
+  </script>
 </html>

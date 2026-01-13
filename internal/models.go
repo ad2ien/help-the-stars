@@ -2,6 +2,7 @@ package internal
 
 import "time"
 
+// Used to notify
 type HelpWantedIssue struct {
 	Url              string
 	Title            string
@@ -9,10 +10,12 @@ type HelpWantedIssue struct {
 	CreationDate     time.Time
 }
 
+// Used to display an web interface
 type Repo struct {
 	RepoOwner             string
 	RepoDescription       string
 	StargazersCount       int
+	Language              string
 	LastIssueCreationTime time.Time
 	Issues                []HelpWantedIssue
 }

@@ -15,7 +15,6 @@ import (
 )
 
 const dbFileName = "db/help-the-stars.db"
-const schemaVersion = 2
 
 type DbConnection struct {
 	Connection *sql.DB
@@ -50,7 +49,6 @@ func (dbConn *DbConnection) Close() {
 }
 
 func ensureSchema(migrations embed.FS, db *sql.DB) error {
-
 	sourceInstance, err := httpfs.New(http.FS(migrations), "migrations")
 	if err != nil {
 		return fmt.Errorf("invalid source instance, %w", err)
@@ -64,9 +62,44 @@ func ensureSchema(migrations embed.FS, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize migrate instance, %w", err)
 	}
-	err = m.Migrate(schemaVersion)
+
+	// Get the latest version from the migrations directory
+	latestVersion, err := getLatestMigrationVersion(migrations)
+	if err != nil {
+		return fmt.Errorf("failed to get latest migration version, %w", err)
+	}
+
+	err = m.Migrate(latestVersion)
 	if err != nil && err != migrate.ErrNoChange {
 		return err
 	}
 	return sourceInstance.Close()
+}
+
+func getLatestMigrationVersion(migrations embed.FS) (uint, error) {
+	entries, err := migrations.ReadDir("migrations")
+	if err != nil {
+		return 0, fmt.Errorf("failed to read migrations directory, %w", err)
+	}
+
+	var maxVersion uint = 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		var version uint
+		_, err := fmt.Sscanf(entry.Name(), "%06d_", &version)
+		if err != nil {
+			continue
+		}
+		if version > maxVersion {
+			maxVersion = version
+		}
+	}
+
+	if maxVersion == 0 {
+		return 0, fmt.Errorf("no valid migrations found")
+	}
+
+	return maxVersion, nil
 }

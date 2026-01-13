@@ -29,7 +29,12 @@ func CreateController(db *sql.DB, matrixClient *MatrixClient) *DataController {
 	}
 }
 
+// TODO it would be nice to cache this
 func (d *DataController) GetDataForView() (ThankStarsData, error) {
+	repos, err := d.queries.ListRepos(d.ctx)
+	if err != nil {
+		return ThankStarsData{}, err
+	}
 	issues, err := d.queries.ListIssues(d.ctx)
 	if err != nil {
 		return ThankStarsData{}, err
@@ -38,7 +43,7 @@ func (d *DataController) GetDataForView() (ThankStarsData, error) {
 	if err != nil {
 		return ThankStarsData{}, err
 	}
-	return mapDbResultToViewModel(issues, taskData), nil
+	return mapDbResultToViewModel(issues, repos, taskData), nil
 }
 
 func (d *DataController) Worker() {
@@ -53,7 +58,7 @@ func (d *DataController) Worker() {
 		}
 	}
 	if initTaskData.InProgress.Valid && initTaskData.InProgress.Bool {
-		log.Info("⚠️ Recuperating from bad stop ")
+		log.Info("⚠️ Recuperating from bad stop")
 	}
 
 	for {
@@ -109,10 +114,25 @@ func (d *DataController) GetAndSaveIssues() {
 	}
 
 	for _, r := range repos {
+
+		// Repo creation
+		log.Info("Save a repo " + r.RepoOwner)
+		_, createErr := d.queries.CreateRepo(d.ctx,
+			mapModelToRepoDbParameter(r))
+
+		if createErr != nil {
+			if strings.Contains(createErr.Error(), "UNIQUE constraint") {
+				log.Info("Repo already exists")
+			} else {
+				log.Error("Error creating repo", "error", createErr)
+			}
+		}
+
+		// Issue creation
 		for _, i := range r.Issues {
 			log.Info("Save an issue " + i.Url)
 			_, createErr := d.queries.CreateIssue(d.ctx,
-				mapModelToDbParameter(i, r))
+				mapModelToIssueDbParameter(i, r))
 
 			if createErr != nil {
 				if strings.Contains(createErr.Error(), "UNIQUE constraint") {
