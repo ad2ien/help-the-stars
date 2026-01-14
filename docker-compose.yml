@@ -4,5 +4,23 @@ services:
     ports:
       - 1983:1983
     volumes:
-      - ./.env:/app/.env:ro
       - ./db:/app/db
+    env_file:
+      - .env
+    command:
+      - "./help-the-stars"
+      - "--gh-token"
+      - "$GITHUB_TOKEN"
+      - "--labels"
+      - "$LABELS"
+      - "--db-file"
+      - "$DB_FILE"
+      - "--matrix-server"
+      - "$MATRIX_HOMESERVER"
+      - "--matrix-user"
+      - "$MATRIX_USERNAME"
+      - "--matrix-password"
+      - "$MATRIX_PASSWORD"
+      - "--matrix-room"
+      - "$MATRIX_ROOMID"
+

@@ -22,7 +22,7 @@ type DbConnection struct {
 
 func NewConnection(migrationsFs embed.FS) DbConnection {
 
-	configDbFile := GetSetting("DB_FILE")
+	configDbFile := GetSettings().DBFile
 	if configDbFile == "" {
 		configDbFile = dbFileName
 	}

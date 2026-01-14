@@ -1,29 +1,65 @@
 package internal
 
 import (
-	"os"
-	"sync"
+	"regexp"
 
 	"github.com/charmbracelet/log"
-	"github.com/joho/godotenv"
 )
 
-var once sync.Once
+var settings *Settings
 
-func GetSettings() {
-	once.Do(func() {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatalf("Failed to load .env file")
-		}
-	})
+type Settings struct {
+	GhToken        string
+	Labels         string
+	MatrixRoomID   string
+	MatrixUsername string
+	MatrixPassword string
+	MatrixServer   string
+	DBFile         string
 }
 
-func GetSetting(key string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		log.Warn("Missing environment variable: " + key)
-		return ""
+func GetSettings() *Settings {
+	return settings
+}
+
+func SetSettings(localSettings *Settings) {
+	localSettings.checkSettings()
+	settings = localSettings
+}
+
+func (s *Settings) IsMatrixConfigured() bool {
+	return s.MatrixRoomID != "" &&
+		s.MatrixUsername != "" &&
+		s.MatrixPassword != "" &&
+		s.MatrixServer != ""
+}
+
+func (s *Settings) checkSettings() {
+	if s.GhToken == "" {
+		log.Fatal("Missing Github token")
 	}
-	return value
+	if s.DBFile == "" {
+		log.Fatal("Missing database file path")
+	}
+	if !s.IsMatrixConfigured() {
+		log.Warn("Matrix notif not fully configured")
+	}
+	if s.Labels == "" {
+		log.Fatal("Missing labels")
+	}
+	if s.GetLabelSlice() == nil {
+		log.Fatal("Invalid labels, format should be \"label1\", \"label2\", ...")
+	}
+}
+
+func (s *Settings) GetLabelSlice() []string {
+	// Regex to extract labels inside double quotes
+	re := regexp.MustCompile(`"([^"]+)"`)
+	matches := re.FindAllStringSubmatch(s.Labels, -1)
+
+	var labels []string
+	for _, match := range matches {
+		labels = append(labels, match[1])
+	}
+	return labels
 }

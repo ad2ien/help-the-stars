@@ -10,71 +10,58 @@
 
 Given a github token and matrix credentials
 
-- Once a day, check configured labels `help-wanted` issues of the repo stared by the user
+- Once a day, check configured labels like `help-wanted` issues of the repo stared by the user
 - Update info in an sqlite database
 - Send message to a matrix room with link and title
-- Serves an interface listing open help wanting issues
+- Serves an interface listing help wanting repos
 
 ## Configuration
 
-```.env
-GITHUB_TOKEN=
-
-MATRIX_HOMESERVER=
-MATRIX_USERNAME=
-MATRIX_PASSWORD=
-MATRIX_ROOMID = 
-
-DB_FILE=
-
-# coma separated labels with quotes to look for
-LABELS='"help-wanted","junior friendly","good first issue"'
+```bash
+go run main.go --help
 ```
+
+Matrix config is optional
 
 ## How
 
-Github graphql request
+Github graphql request : <https://github.com/ad2ien/help-the-stars/blob/main/internal/stars.go#L53>
 
-```graphql
-{
-  viewer {
-    starredRepositories(first: 50, after: "$cursor") {
-      nodes {
-        nameWithOwner
-        description
-        stargazerCount
-        issues(states: OPEN, labels: ["$labels"], first: 5) {
-          nodes {
-            title
-            url
-            body
-            createdAt
-          }
-          pageInfo {
-            hasNextPage
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-}
+## Run
+
+Create an env file
+
+```.env
+GITHUB_TOKEN=
+DB_FILE="db/help-the-stars-dev.db"
+LABELS='"help-wanted", "help wanted","junior friendly","good first issue"'
+
+# optionally
+MATRIX_HOMESERVER=
+MATRIX_USERNAME=
+MATRIX_PASSWORD=
+MATRIX_ROOMID=
 ```
 
-## dev
-
-Run
+Start
 
 ```bash
-go run *.go
+source .env
+go run *.go --debug \
+ --gh-token $GH_TOKEN \
+ --labels $LABELS \
+ --db-file $DB_FILE \
+ --matrix-server $MATRIX_SERVER \
+ --matrix-username $MATRIX_USERNAME \
+ --matrix-password $MATRIX_PASSWORD \
+ --matrix-room $MATRIX_ROOM
+
 ```
 
 Or with docker
 
 ```bash
+docker compose build
 docker compose up
 ```
 
@@ -93,5 +80,6 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 
 ## TODO
 
-- [ ] env -> args and check args
-- [ ] specify user
+- [ ] display user in interface
+- [ ] if more than 10 issues : single message
+- [ ] configure interval / notification frequency

@@ -16,14 +16,12 @@ type MatrixClient struct {
 
 func CreateMatrixClient() *MatrixClient {
 
-	if GetSetting("MATRIX_HOMESERVER") == "" ||
-		GetSetting("MATRIX_USERNAME") == "" ||
-		GetSetting("MATRIX_PASSWORD") == "" {
+	if !GetSettings().IsMatrixConfigured() {
 		return nil
 	}
 
-	client, err := mautrix.NewClient(GetSetting("MATRIX_HOMESERVER"),
-		id.UserID(GetSetting("MATRIX_USERNAME")),
+	client, err := mautrix.NewClient(GetSettings().MatrixServer,
+		id.UserID(GetSettings().MatrixUsername),
 		"")
 	if err != nil {
 		log.Fatal(err)
@@ -32,10 +30,10 @@ func CreateMatrixClient() *MatrixClient {
 	resp, err := client.Login(context.Background(), &mautrix.ReqLogin{
 		Type: mautrix.AuthTypePassword,
 		Identifier: mautrix.UserIdentifier{
-			User: GetSetting("MATRIX_USERNAME"),
+			User: GetSettings().MatrixUsername,
 			Type: mautrix.IdentifierTypeUser,
 		},
-		Password:         GetSetting("MATRIX_PASSWORD"),
+		Password:         GetSettings().MatrixPassword,
 		StoreCredentials: true,
 	})
 	if err != nil {
@@ -57,7 +55,7 @@ func (c *MatrixClient) Notify(issue *HelpWantedIssue) {
 		Body:    message,
 	}
 	_, err := c.client.SendMessageEvent(context.Background(),
-		id.RoomID(GetSetting("MATRIX_ROOMID")), event.EventMessage, content)
+		id.RoomID(GetSettings().MatrixRoomID), event.EventMessage, content)
 	if err != nil {
 		log.Error(err)
 	}

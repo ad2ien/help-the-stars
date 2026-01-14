@@ -108,7 +108,7 @@ func buildQueryFromTemplate(repoCursor string) (string, error) {
 		MaxIssues  int
 	}{
 		RepoCursor: repoCursor,
-		Labels:     GetSetting("LABELS"),
+		Labels:     GetSettings().Labels,
 		MaxIssues:  MAX_ISSUES_PER_REPO,
 	}
 
@@ -147,7 +147,7 @@ func GetStaredRepos() ([]Repo, error) {
 
 func fetchQueryResults(cursor string) (GhQuery, error) {
 	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: GetSetting("GITHUB_TOKEN")},
+		&oauth2.Token{AccessToken: GetSettings().GhToken},
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
 

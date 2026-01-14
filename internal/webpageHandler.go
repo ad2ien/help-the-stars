@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -67,19 +66,13 @@ func buildHelpIssuesLink(repoOwner string) string {
 // TransformLabels transforms a string like `"good first issue", "help wanted"`
 // into `(label%3A%22good%20first%20issue%22%20OR%20label%3A%22help%20wanted%22)`.
 func labelsToGhUrlParam() string {
-	labelsSettings := GetSetting("LABELS")
-	// Regex to extract labels inside double quotes
-	re := regexp.MustCompile(`"([^"]+)"`)
-	matches := re.FindAllStringSubmatch(labelsSettings, -1)
+	labelSettings := GetSettings().GetLabelSlice()
 
 	var labels []string
-	for _, match := range matches {
-		if len(match) > 1 {
-			label := match[1]
-			// URL encode the label (replace spaces with %20)
-			encodedLabel := strings.ReplaceAll(url.QueryEscape(label), "+", "%20")
-			labels = append(labels, fmt.Sprintf("label:%%22%s%%22", encodedLabel))
-		}
+	for _, label := range labelSettings {
+		// URL encode the label (replace spaces with %20)
+		encodedLabel := strings.ReplaceAll(url.QueryEscape(label), "+", "%20")
+		labels = append(labels, fmt.Sprintf("label:%%22%s%%22", encodedLabel))
 	}
 
 	// Join labels with " OR " and wrap in parentheses
