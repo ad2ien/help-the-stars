@@ -32,6 +32,6 @@ func (s *Server) Start(templates *embed.FS, staticFiles *embed.FS) {
 	err := http.ListenAndServe(":1983", nil)
 
 	if err != nil {
-		log.Error("Server error", err)
+		log.Error("Server starting", "error", err)
 	}
 }

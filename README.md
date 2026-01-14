@@ -40,7 +40,7 @@ LABELS='"help-wanted", "help wanted","junior friendly","good first issue"'
 MATRIX_HOMESERVER=
 MATRIX_USERNAME=
 MATRIX_PASSWORD=
-MATRIX_ROOMID=
+MATRIX_ROOM_ID=
 ```
 
 Start
@@ -48,13 +48,13 @@ Start
 ```bash
 source .env
 go run *.go --debug \
- --gh-token $GH_TOKEN \
- --labels $LABELS \
- --db-file $DB_FILE \
- --matrix-server $MATRIX_SERVER \
- --matrix-username $MATRIX_USERNAME \
- --matrix-password $MATRIX_PASSWORD \
- --matrix-room $MATRIX_ROOM
+--gh-token $GITHUB_TOKEN \
+--db-file $DB_FILE \
+--labels $LABELS \
+--matrix-server $MATRIX_HOMESERVER \
+--matrix-username $MATRIX_USERNAME \
+--matrix-password $MATRIX_PASSWORD \
+--matrix-room $MATRIX_ROOM_ID
 
 ```
 
@@ -80,6 +80,6 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 
 ## TODO
 
-- [ ] display user in interface
-- [ ] if more than 10 issues : single message
+- [ ] display user in interface and labels
 - [ ] configure interval / notification frequency
+- [ ] error if bad gh token

@@ -22,5 +22,4 @@ services:
       - "--matrix-password"
       - "$MATRIX_PASSWORD"
       - "--matrix-room"
-      - "$MATRIX_ROOMID"
-
+      - "$MATRIX_ROOM_ID"

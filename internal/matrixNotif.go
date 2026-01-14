@@ -60,3 +60,18 @@ func (c *MatrixClient) Notify(issue *HelpWantedIssue) {
 		log.Error(err)
 	}
 }
+
+func (c *MatrixClient) NotifySeveralNewIssues() {
+
+	message := "Help wanted for several new issues. Could be worth checking Help-the-stars interface ⭐"
+
+	content := event.MessageEventContent{
+		MsgType: event.MsgText,
+		Body:    message,
+	}
+	_, err := c.client.SendMessageEvent(context.Background(),
+		id.RoomID(GetSettings().MatrixRoomID), event.EventMessage, content)
+	if err != nil {
+		log.Error(err)
+	}
+}

@@ -13,6 +13,7 @@ import (
 
 const CHECK_INTERVAL_S = 3000
 const DATA_REFRESH_INTERVAL_H = 2
+const MAX_ISSUE_NOTIFS = 7
 
 type DataController struct {
 	queries      *persistence.Queries
@@ -106,12 +107,7 @@ func (d *DataController) GetAndSaveIssues() {
 		}
 	}
 
-	if d.matrixClient != nil {
-		for i := range news {
-			log.Info("Notify an issue " + news[i].Url)
-			d.matrixClient.Notify(&news[i])
-		}
-	}
+	d.handleNotifications(news)
 
 	for _, r := range repos {
 
@@ -147,6 +143,24 @@ func (d *DataController) GetAndSaveIssues() {
 	err = d.queries.UpdateTimeTaskData(d.ctx, sql.NullTime{Time: time.Now(), Valid: true})
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func (d *DataController) handleNotifications(issues []HelpWantedIssue) {
+	if d.matrixClient == nil {
+		return
+	}
+	if issues == nil {
+		return
+	}
+	if len(issues) > MAX_ISSUE_NOTIFS {
+		log.Info("Notify many issues")
+		d.matrixClient.NotifySeveralNewIssues()
+		return
+	}
+	for i := range issues {
+		log.Info("Notify an issue " + issues[i].Url)
+		d.matrixClient.Notify(&issues[i])
 	}
 }
 
