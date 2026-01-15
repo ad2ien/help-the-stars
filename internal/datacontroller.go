@@ -63,10 +63,14 @@ func (d *DataController) Worker() {
 
 	for {
 		taskData, err := d.queries.GetTaskData(d.ctx)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			log.Fatal(err)
-		} else if !taskData.LastRun.Valid ||
-			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour* time.Duration(GetSettings().Interval)) {
+		}
+
+		if err == sql.ErrNoRows ||
+			!taskData.LastRun.Valid ||
+			(taskData.LastRun.Valid &&
+				time.Since(taskData.LastRun.Time) > time.Hour*time.Duration(GetSettings().Interval)) {
 			log.Info("worker : time elapsed, get data...")
 			d.GetAndSaveIssues()
 
