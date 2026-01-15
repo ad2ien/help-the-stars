@@ -9,13 +9,18 @@ import (
 var settings *Settings
 
 type Settings struct {
-	GhToken        string
-	Labels         string
+	GhToken string
+	// Hours interval between Github queries
+	Interval int
+	DBFile   string
+	// labels to look for
+	// ex: "\"help-wanted\", \"help wanted\",\"junior friendly\",\"good first issue\""
+	Labels string
+	//optional
 	MatrixRoomID   string
 	MatrixUsername string
 	MatrixPassword string
 	MatrixServer   string
-	DBFile         string
 }
 
 func GetSettings() *Settings {
@@ -37,6 +42,9 @@ func (s *Settings) IsMatrixConfigured() bool {
 func (s *Settings) checkSettings() {
 	if s.GhToken == "" {
 		log.Fatal("Missing Github token")
+	}
+	if s.Interval < 1 || s.Interval > 100 {
+		log.Fatal("Invalid interval : should be between 1 and 100 hours")
 	}
 	if s.DBFile == "" {
 		log.Fatal("Missing database file path")

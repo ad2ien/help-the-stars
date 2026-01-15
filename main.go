@@ -27,6 +27,7 @@ func main() {
 	}
 
 	debugFlag := flag.Bool("debug", false, "Display debug logs")
+	interval := flag.Int("interval", 7, "Hours interval between github queries")
 	ghTokenFlag := flag.String("gh-token", "", "Github token")
 	labels := flag.String("labels", "\"help-wanted\", \"help wanted\",\"junior friendly\",\"good first issue\"", "labels to look for")
 	dbFile := flag.String("db-file", "db/help-the-stars.db", "SQLite database file")
@@ -38,13 +39,14 @@ func main() {
 	flag.Parse()
 
 	internal.SetSettings(&internal.Settings{
-		GhToken: *ghTokenFlag,
-		Labels: *labels,
-		DBFile: *dbFile,
-		MatrixServer: *matrixServer,
+		GhToken:        *ghTokenFlag,
+		Interval:       *interval,
+		Labels:         *labels,
+		DBFile:         *dbFile,
+		MatrixServer:   *matrixServer,
 		MatrixUsername: *matrixUsername,
 		MatrixPassword: *matrixPassword,
-		MatrixRoomID: *matrixRoomID,
+		MatrixRoomID:   *matrixRoomID,
 	})
 
 	matrix := internal.CreateMatrixClient()

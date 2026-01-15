@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-const CHECK_INTERVAL_S = 3000
 const DATA_REFRESH_INTERVAL_H = 2
 const MAX_ISSUE_NOTIFS = 7
 
@@ -73,7 +72,7 @@ func (d *DataController) Worker() {
 
 		} else {
 			log.Debug(".")
-			time.Sleep(time.Duration(CHECK_INTERVAL_S) * time.Millisecond)
+			time.Sleep(time.Duration(GetSettings().Interval) * time.Hour)
 		}
 	}
 }
