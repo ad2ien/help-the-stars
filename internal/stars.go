@@ -179,6 +179,9 @@ func fetchQueryResults(cursor string) (GhQuery, error) {
 	if err != nil {
 		log.Fatalf("Error sending request: %v", err)
 	}
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal("Error sending request", "status", resp.Status)
+	}
 	defer closeBody(resp.Body)
 
 	// Read the response

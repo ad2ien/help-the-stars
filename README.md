@@ -82,4 +82,3 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 
 - [ ] display user in interface and labels
 - [ ] configure interval / notification frequency
-- [ ] error if bad gh token
