@@ -20,7 +20,7 @@ var staticFiles embed.FS
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage of Help the start ⭐")
+		fmt.Println("Usage of Help the stars ⭐")
 		fmt.Println("  https://github.com/ad2ien/help-the-stars/")
 		fmt.Println("\nFlags:")
 		flag.PrintDefaults()
