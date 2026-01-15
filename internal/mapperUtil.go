@@ -36,6 +36,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 				IssueDescription: string(issue.Body),
 				Url:              string(issue.Url),
 				CreationDate:     issue.CreatedAt,
+				RepoWithOwner:        repo.NameWithOwner,
 			}
 			r.Issues = append(r.Issues, helpWantedIssue)
 
@@ -50,12 +51,12 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 	return repos
 }
 
-func mapModelToIssueDbParameter(issue HelpWantedIssue, repo Repo) persistence.CreateIssueParams {
+func mapModelToIssueDbParameter(issue HelpWantedIssue) persistence.CreateIssueParams {
 	return persistence.CreateIssueParams{
 		Url:           issue.Url,
 		Title:         issue.Title,
 		Description:   issue.IssueDescription,
-		RepoWithOwner: repo.RepoOwner,
+		RepoWithOwner: issue.RepoWithOwner,
 		CreationDate:  issue.CreationDate,
 	}
 }
@@ -118,6 +119,7 @@ func mapDbIssueToViewIssue(issue persistence.Issue) HelpWantedIssue {
 		IssueDescription: issue.Description,
 		Url:              issue.Url,
 		CreationDate:     issue.CreationDate,
+		RepoWithOwner:        issue.RepoWithOwner,
 	}
 }
 
@@ -135,4 +137,23 @@ func flattenIssues(repos []Repo) []HelpWantedIssue {
 		issues = append(issues, repo.Issues...)
 	}
 	return issues
+}
+
+func mapDbRepoToViewRepo(repo persistence.Repo) Repo {
+	return Repo{
+		RepoOwner:       repo.RepoWithOwner,
+		RepoDescription: repo.Description.String,
+		StargazersCount: int(repo.StargazersCount.Int64),
+		Language:        repo.Language.String,
+		Issues:          nil,
+		LastIssueCreationTime: time.Time{},
+	}
+}
+
+func mapDbReposToViewRepos(repos []persistence.Repo) []Repo {
+	mappedRepos := make([]Repo, len(repos))
+	for i, repo := range repos {
+		mappedRepos[i] = mapDbRepoToViewRepo(repo)
+	}
+	return mappedRepos
 }

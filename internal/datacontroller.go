@@ -11,8 +11,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-const DATA_REFRESH_INTERVAL_H = 2
 const MAX_ISSUE_NOTIFS = 7
+const CHECK_INTERVAL_S = 3000
 
 type DataController struct {
 	queries      *persistence.Queries
@@ -66,13 +66,13 @@ func (d *DataController) Worker() {
 		if err != nil {
 			log.Fatal(err)
 		} else if !taskData.LastRun.Valid ||
-			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour*DATA_REFRESH_INTERVAL_H) {
+			(taskData.LastRun.Valid && time.Since(taskData.LastRun.Time) > time.Hour* time.Duration(GetSettings().Interval)) {
 			log.Info("worker : time elapsed, get data...")
 			d.GetAndSaveIssues()
 
 		} else {
 			log.Debug(".")
-			time.Sleep(time.Duration(GetSettings().Interval) * time.Hour)
+			time.Sleep(time.Duration(CHECK_INTERVAL_S) * time.Millisecond)
 		}
 	}
 }
@@ -91,26 +91,54 @@ func (d *DataController) GetAndSaveIssues() {
 		log.Fatal(err)
 	}
 
-	issues := flattenIssues(repos)
-	if issues == nil {
-		log.Fatal("No issues found, something went wrong")
+	ghIssues := flattenIssues(repos)
+	if ghIssues == nil {
+		log.Warn("No issues found don't touch anything...")
 		return
 	}
-	news, expired := d.sortNewAndExpired(issues)
 
-	for i := range expired {
-		log.Info("Delete an issue ", "url", expired[i].Url)
-		delErr := d.queries.DeleteIssue(d.ctx, expired[i].Url)
+	dbIssues, err := d.queries.ListIssues(d.ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	issuesFromDb := mapDbIssuesToViewIssues(dbIssues)
+
+	dbRepos, err := d.queries.ListRepos(d.ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	reposFromDb := mapDbReposToViewRepos(dbRepos)
+
+	newIssues, expiredIssues := sortNewAndExpired(ghIssues, issuesFromDb)
+	newRepos, expiredRepos := sortNewAndExpired(repos, reposFromDb)
+
+	d.deleteIssues(expiredIssues)
+	d.deleteRepos(expiredRepos)
+
+	d.createRepos(newRepos)
+	d.createIssues(newIssues)
+
+	d.handleNotifications(newIssues)
+
+	err = d.queries.UpdateTimeTaskData(d.ctx, sql.NullTime{Time: time.Now(), Valid: true})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (d *DataController) deleteIssues(expiredIssues []HelpWantedIssue) {
+	for i := range expiredIssues {
+		log.Info("Delete an issue ", "url", expiredIssues[i].Url)
+		delErr := d.queries.DeleteIssue(d.ctx, expiredIssues[i].Url)
 		if delErr != nil {
 			log.Error("Error deleting issue", "error", delErr)
 		}
 	}
+}
 
-	d.handleNotifications(news)
-
+func (d *DataController) createRepos(repos []Repo) {
 	for _, r := range repos {
 
-		// Repo creation
 		log.Info("Save a repo " + r.RepoOwner)
 		_, createErr := d.queries.CreateRepo(d.ctx,
 			mapModelToRepoDbParameter(r))
@@ -122,26 +150,32 @@ func (d *DataController) GetAndSaveIssues() {
 				log.Error("Error creating repo", "error", createErr)
 			}
 		}
+	}
+}
 
-		// Issue creation
-		for _, i := range r.Issues {
-			log.Info("Save an issue " + i.Url)
-			_, createErr := d.queries.CreateIssue(d.ctx,
-				mapModelToIssueDbParameter(i, r))
+func (d *DataController) createIssues(issues []HelpWantedIssue) {
+	for _, i := range issues {
+		log.Info("Save an issue " + i.Url)
+		_, createErr := d.queries.CreateIssue(d.ctx,
+			mapModelToIssueDbParameter(i))
 
-			if createErr != nil {
-				if strings.Contains(createErr.Error(), "UNIQUE constraint") {
-					log.Info("Issue already exists")
-				} else {
-					log.Error("Error creating issue", "error", createErr)
-				}
+		if createErr != nil {
+			if strings.Contains(createErr.Error(), "UNIQUE constraint") {
+				log.Info("Issue already exists")
+			} else {
+				log.Error("Error creating issue", "error", createErr)
 			}
 		}
 	}
+}
 
-	err = d.queries.UpdateTimeTaskData(d.ctx, sql.NullTime{Time: time.Now(), Valid: true})
-	if err != nil {
-		log.Fatal(err)
+func (d *DataController) deleteRepos(expiredRepos []Repo) {
+	for i := range expiredRepos {
+		log.Info("Delete repo", "repo", expiredRepos[i].RepoOwner)
+		delErr := d.queries.DeleteRepo(d.ctx, expiredRepos[i].RepoOwner)
+		if delErr != nil {
+			log.Error("Error deleting issue", "error", delErr)
+		}
 	}
 }
 
@@ -164,30 +198,25 @@ func (d *DataController) handleNotifications(issues []HelpWantedIssue) {
 }
 
 // return new issue to notify and expired one to delete form base
-func (d *DataController) sortNewAndExpired(ghIssues []HelpWantedIssue) (new []HelpWantedIssue, expired []HelpWantedIssue) {
-	issues, err := d.queries.ListIssues(d.ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	issuesFromDb := mapDbIssuesToViewIssues(issues)
+func sortNewAndExpired[T HasKey](incoming []T, issuesFromDb []T) (new []T, expired []T) {
 
-	for _, ghIssue := range ghIssues {
+	for _, object := range incoming {
 		found := false
 		for _, issue := range issuesFromDb {
-			if issue.Url == ghIssue.Url {
+			if issue.Key() == object.Key() {
 				found = true
 				break
 			}
 		}
 		if !found {
-			new = append(new, ghIssue)
+			new = append(new, object)
 		}
 	}
 
 	for _, issue := range issuesFromDb {
 		found := false
-		for _, ghIssue := range ghIssues {
-			if issue.Url == ghIssue.Url {
+		for _, object := range incoming {
+			if issue.Key() == object.Key() {
 				found = true
 				break
 			}
@@ -197,5 +226,4 @@ func (d *DataController) sortNewAndExpired(ghIssues []HelpWantedIssue) (new []He
 		}
 	}
 	return new, expired
-
 }

@@ -46,7 +46,7 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 }
 
 func formatDate(t time.Time) string {
-	return t.Format("2006-01-02")
+	return t.Format("2006-01-02 15:04")
 }
 
 func truncate(s string, length int) string {
@@ -62,9 +62,9 @@ func buildHelpIssuesLink(repoOwner string) string {
 	return fmt.Sprintf("https://github.com/%s/%s%s", repoOwner, ISSUE_LINK_PARAM, labelsToGhUrlParam())
 }
 
-// https://github.com/jgm/pandoc/issues?q=is%3Aissue%20state%3Aopen%20(label%3A%22good%20first%20issue%22%20OR%20label%3A%22help%20wanted%22)
 // TransformLabels transforms a string like `"good first issue", "help wanted"`
 // into `(label%3A%22good%20first%20issue%22%20OR%20label%3A%22help%20wanted%22)`.
+// to have something like https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted")
 func labelsToGhUrlParam() string {
 	labelSettings := GetSettings().GetLabelSlice()
 
