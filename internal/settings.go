@@ -71,3 +71,15 @@ func (s *Settings) GetLabelSlice() []string {
 	}
 	return labels
 }
+
+func (s *Settings) Print() {
+	log.Info("Settings:")
+	log.Info("  Github token: **")
+	log.Infof("  Interval: %d hours", s.Interval)
+	log.Infof("  Database file: %s", s.DBFile)
+	log.Infof("  Labels: %s", s.Labels)
+	log.Infof("  Matrix room ID: %s", s.MatrixRoomID)
+	log.Infof("  Matrix username: %s", s.MatrixUsername)
+	log.Info("  Matrix password: ***")
+	log.Infof("  Matrix server: %s", s.MatrixServer)
+}

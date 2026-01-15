@@ -49,6 +49,8 @@ func main() {
 		MatrixRoomID:   *matrixRoomID,
 	})
 
+	internal.GetSettings().Print()
+
 	matrix := internal.CreateMatrixClient()
 
 	db := internal.NewConnection(Migrations)

@@ -50,7 +50,7 @@ source .env
 go run *.go --debug \
 --gh-token $GITHUB_TOKEN \
 --db-file $DB_FILE \
---labels $LABELS \
+--labels "${LABELS}" \
 --matrix-server $MATRIX_HOMESERVER \
 --matrix-username $MATRIX_USERNAME \
 --matrix-password $MATRIX_PASSWORD \
@@ -80,5 +80,4 @@ docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path
 
 ## Todo
 
-- [ ] not the same number of issue in debug or script
 - [ ] delete task db table row crashes
