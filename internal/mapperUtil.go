@@ -12,31 +12,26 @@ import (
 func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 	var repos []Repo
 
-	for _, repo := range query.Data.Viewer.StarredRepositories.Nodes {
-		if len(repo.Issues.Nodes) == 0 {
+	for _, ghRepo := range query.Data.Viewer.StarredRepositories.Nodes {
+		if len(ghRepo.Issues.Nodes) == 0 {
 			continue
 		}
-		log.Debug("Processing", "repo", repo.NameWithOwner)
-
-		lang := ""
-		if len(repo.Languages.Nodes) > 0 {
-			lang = repo.Languages.Nodes[0].Name
-		}
+		log.Debug("Processing", "repo", ghRepo.NameWithOwner)
 
 		r := Repo{
-			RepoOwner:       repo.NameWithOwner,
-			RepoDescription: repo.Description,
-			StargazersCount: repo.StargazerCount,
-			Language:        lang,
+			RepoOwner:       ghRepo.NameWithOwner,
+			RepoDescription: ghRepo.Description,
+			StargazersCount: ghRepo.StargazerCount,
+			Language:        findMainLanguage(ghRepo.Languages.Edges),
 		}
 		lastCreationTime := time.Time{}
-		for _, issue := range repo.Issues.Nodes {
+		for _, issue := range ghRepo.Issues.Nodes {
 			helpWantedIssue := HelpWantedIssue{
 				Title:            string(issue.Title),
 				IssueDescription: string(issue.Body),
 				Url:              string(issue.Url),
 				CreationDate:     issue.CreatedAt,
-				RepoWithOwner:        repo.NameWithOwner,
+				RepoWithOwner:        ghRepo.NameWithOwner,
 			}
 			r.Issues = append(r.Issues, helpWantedIssue)
 
@@ -49,6 +44,21 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 	}
 
 	return repos
+}
+
+func findMainLanguage(langEdges []GhLanguageEdge) string {
+	if len(langEdges) == 0 {
+		return ""
+	}
+	var mainLanguage string
+	var maxSize int
+	for _, edge := range langEdges {
+		if edge.Size > maxSize {
+			mainLanguage = edge.Node.Name
+			maxSize = edge.Size
+		}
+	}
+	return mainLanguage
 }
 
 func mapModelToIssueDbParameter(issue HelpWantedIssue) persistence.CreateIssueParams {
