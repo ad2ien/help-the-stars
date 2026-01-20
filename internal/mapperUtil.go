@@ -17,6 +17,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 		if len(ghRepo.Issues.Nodes) == 0 {
 			continue
 		}
+
 		log.Debug("Processing", "repo", ghRepo.NameWithOwner)
 
 		r := Repo{
@@ -26,6 +27,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 			Language:        findMainLanguage(ghRepo.Languages.Edges),
 		}
 		lastCreationTime := time.Time{}
+
 		for _, issue := range ghRepo.Issues.Nodes {
 			helpWantedIssue := HelpWantedIssue{
 				Title:            string(issue.Title),
@@ -40,6 +42,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 				lastCreationTime = helpWantedIssue.CreationDate
 			}
 		}
+
 		r.LastIssueCreationTime = lastCreationTime
 		repos = append(repos, r)
 	}
@@ -51,14 +54,19 @@ func findMainLanguage(langEdges []GhLanguageEdge) string {
 	if len(langEdges) == 0 {
 		return ""
 	}
-	var mainLanguage string
-	var maxSize int
+
+	var (
+		mainLanguage string
+		maxSize      int
+	)
+
 	for _, edge := range langEdges {
 		if edge.Size > maxSize {
 			mainLanguage = edge.Node.Name
 			maxSize = edge.Size
 		}
 	}
+
 	return mainLanguage
 }
 
@@ -93,10 +101,8 @@ func mapDbResultToViewModel(
 }
 
 func mapDbIssuesToViewRepos(issues []persistence.Issue, repos []persistence.Repo) []Repo {
-
 	result := make([]Repo, len(repos))
 	for i, repo := range repos {
-
 		filteredIssues, lastIssueDate := findIssuesAndLastIssueDateByRepoOwner(repo.RepoWithOwner, issues)
 		result[i] = Repo{
 			RepoOwner:             repo.RepoWithOwner,
@@ -123,6 +129,7 @@ func findIssuesAndLastIssueDateByRepoOwner(
 			}
 		}
 	}
+
 	return filteredIssues, lastIssueDate
 }
 
@@ -141,6 +148,7 @@ func mapDbIssuesToViewIssues(issues []persistence.Issue) []HelpWantedIssue {
 	for i, issue := range issues {
 		mappedIssues[i] = mapDbIssueToViewIssue(issue)
 	}
+
 	return mappedIssues
 }
 
@@ -149,6 +157,7 @@ func flattenIssues(repos []Repo) []HelpWantedIssue {
 	for _, repo := range repos {
 		issues = append(issues, repo.Issues...)
 	}
+
 	return issues
 }
 
@@ -168,5 +177,6 @@ func mapDbReposToViewRepos(repos []persistence.Repo) []Repo {
 	for i, repo := range repos {
 		mappedRepos[i] = mapDbRepoToViewRepo(repo)
 	}
+
 	return mappedRepos
 }

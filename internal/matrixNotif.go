@@ -11,12 +11,11 @@ import (
 )
 
 type MatrixClient struct {
-	client *mautrix.Client
+	client       *mautrix.Client
 	MatrixRoomID string
 }
 
 func CreateMatrixClient(ctx context.Context, settingsService *SettingsService) *MatrixClient {
-
 	if !settingsService.GetSettings().IsMatrixConfigured() {
 		return nil
 	}
@@ -40,22 +39,23 @@ func CreateMatrixClient(ctx context.Context, settingsService *SettingsService) *
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	client.DeviceID = resp.DeviceID
 
 	return &MatrixClient{
-		client: client,
+		client:       client,
 		MatrixRoomID: settingsService.GetSettings().MatrixRoomID,
 	}
 }
 
 func (c *MatrixClient) Notify(ctx context.Context, issue *HelpWantedIssue) {
-
 	message := fmt.Sprintf("Help wanted for new issue :\n%s\n%s", issue.Title, issue.Url)
 
 	content := event.MessageEventContent{
 		MsgType: event.MsgText,
 		Body:    message,
 	}
+
 	_, err := c.client.SendMessageEvent(ctx,
 		id.RoomID(c.MatrixRoomID), event.EventMessage, content)
 	if err != nil {
@@ -64,13 +64,13 @@ func (c *MatrixClient) Notify(ctx context.Context, issue *HelpWantedIssue) {
 }
 
 func (c *MatrixClient) NotifySeveralNewIssues(ctx context.Context) {
-
 	message := "Help wanted for several new issues. Could be worth checking Help-the-stars interface ⭐"
 
 	content := event.MessageEventContent{
 		MsgType: event.MsgText,
 		Body:    message,
 	}
+
 	_, err := c.client.SendMessageEvent(ctx,
 		id.RoomID(c.MatrixRoomID), event.EventMessage, content)
 	if err != nil {

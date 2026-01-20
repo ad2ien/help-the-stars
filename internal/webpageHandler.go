@@ -38,11 +38,13 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Error("Error getting last run time:", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
 		return
 	}
 
 	if r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
+
 		return
 	}
 
@@ -56,10 +58,13 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		log.Error("Error getting data:", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
 		return
 	}
+
 	w.Header().Set("ETag", etag)
 	w.Header().Set("Cache-Control", "public, max-age="+wph.settingsService.GetMaxAge())
+
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		log.Error("Error executing template:", "error", err)
@@ -75,6 +80,7 @@ func truncate(s string, length int) string {
 	if len(s) > length {
 		return s[:length] + "..."
 	}
+
 	return s
 }
 
@@ -91,6 +97,7 @@ func (wph *WebpageHandler) labelsToGhUrlParam() string {
 	labelSettings := wph.settingsService.GetSettings().GetLabelSlice()
 
 	var labels []string
+
 	for _, label := range labelSettings {
 		// URL encode the label (replace spaces with %20)
 		encodedLabel := strings.ReplaceAll(url.QueryEscape(label), "+", "%20")
@@ -101,5 +108,6 @@ func (wph *WebpageHandler) labelsToGhUrlParam() string {
 	if len(labels) > 0 {
 		return fmt.Sprintf("(%s)", strings.Join(labels, "%20OR%20"))
 	}
+
 	return ""
 }

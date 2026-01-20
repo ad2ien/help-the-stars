@@ -9,21 +9,19 @@ import (
 )
 
 type Server struct {
-	controller *DataController
+	controller      *DataController
 	settingsService *SettingsService
 }
 
 func NewServer(controller *DataController, settingsService *SettingsService) *Server {
 	return &Server{
-		controller:        controller,
-		settingsService:   settingsService,
+		controller:      controller,
+		settingsService: settingsService,
 	}
 }
 
 func (s *Server) Start(templates *embed.FS, staticFiles *embed.FS) {
 	log.Info("Start server...")
-
-
 
 	webpageHandler := CreateWebpageHandler(s.controller, s.settingsService, templates)
 
@@ -34,14 +32,15 @@ func (s *Server) Start(templates *embed.FS, staticFiles *embed.FS) {
 	http.HandleFunc("/", webpageHandler.HandleWebPage)
 
 	log.Info("Server listening on port 1983")
+
 	server := &http.Server{
 		Addr:         ":1983",
 		Handler:      nil,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	err := server.ListenAndServe()
 
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Error("Server starting", "error", err)
 	}

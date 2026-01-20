@@ -24,11 +24,11 @@ type DbConnection struct {
 }
 
 func NewConnection(migrationsFs embed.FS, settingsService *SettingsService) DbConnection {
-
 	configDbFile := settingsService.settings.DBFile
 	if configDbFile == "" {
 		configDbFile = dbFileName
 	}
+
 	log.Info("DB using file : " + configDbFile)
 
 	conn, err := sql.Open("sqlite3", configDbFile)
@@ -56,10 +56,12 @@ func ensureSchema(migrations embed.FS, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("invalid source instance, %w", err)
 	}
+
 	targetInstance, err := sqlite.WithInstance(db, new(sqlite.Config))
 	if err != nil {
 		return fmt.Errorf("invalid target sqlite instance, %w", err)
 	}
+
 	m, err := migrate.NewWithInstance(
 		"httpfs", sourceInstance, "sqlite", targetInstance)
 	if err != nil {
@@ -76,6 +78,7 @@ func ensureSchema(migrations embed.FS, db *sql.DB) error {
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
+
 	return sourceInstance.Close()
 }
 
@@ -86,15 +89,19 @@ func getLatestMigrationVersion(migrations embed.FS) (uint, error) {
 	}
 
 	var maxVersion uint = 0
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
+
 		var version uint
+
 		_, err := fmt.Sscanf(entry.Name(), "%06d_", &version)
 		if err != nil {
 			continue
 		}
+
 		if version > maxVersion {
 			maxVersion = version
 		}

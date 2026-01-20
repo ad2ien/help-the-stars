@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"text/template"
@@ -64,7 +64,7 @@ const GRAPHQL_TEMPLATE = `
 }
 `
 
-var ErrUnexpectedStatusCode = fmt.Errorf("unexpected status code")
+var ErrUnexpectedStatusCode = errors.New("unexpected status code")
 
 type GhStarsService struct {
 	settingsService *SettingsService
@@ -121,6 +121,7 @@ func NewGithubStarService(settingsService *SettingsService) *GhStarsService {
 }
 func (ghs *GhStarsService) GetStaredRepos(ctx context.Context) ([]Repo, error) {
 	result := make([]Repo, 0)
+
 	cursor := ""
 	for {
 		log.Debug("Api call", "cursor", cursor)
@@ -140,7 +141,6 @@ func (ghs *GhStarsService) GetStaredRepos(ctx context.Context) ([]Repo, error) {
 	}
 
 	return result, nil
-
 }
 
 func (ghs *GhStarsService) buildQueryFromTemplate(repoCursor string) (string, error) {
@@ -155,6 +155,7 @@ func (ghs *GhStarsService) buildQueryFromTemplate(repoCursor string) (string, er
 	}
 
 	var query bytes.Buffer
+
 	err := ghs.tmpl.Execute(&query, data)
 	if err != nil {
 		return "", err
@@ -173,6 +174,7 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	query, err := ghs.buildQueryFromTemplate(cursor)
 	if err != nil {
 		log.Error("Error building query with template", "error", err)
+
 		return GhQuery{}, err
 	}
 
@@ -181,13 +183,15 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	})
 	if err != nil {
 		log.Error("Error marshaling query: %v", err)
+
 		return GhQuery{}, err
 	}
 
 	// Create the HTTP request
-	req, err := http.NewRequest("POST", GRAPHQL_URL, bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest(http.MethodPost, GRAPHQL_URL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		log.Error("Error creating request: %v", err)
+
 		return GhQuery{}, err
 	}
 
@@ -198,11 +202,14 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	resp, err := doWithRetry(httpClient, req)
 	if err != nil {
 		log.Error("Error sending request: %v", err)
+
 		return GhQuery{}, err
 	}
 	defer closeBody(resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
 		log.Error("Error sending request", "status", resp.Status)
+
 		return GhQuery{}, ErrUnexpectedStatusCode
 	}
 
@@ -210,13 +217,16 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error("Error reading response: %v", err)
+
 		return GhQuery{}, err
 	}
 
 	var queryResult GhQuery
+
 	err = json.Unmarshal(body, &queryResult)
 	if err != nil {
 		log.Error("Error unmarshaling response: %v", err)
+
 		return GhQuery{}, err
 	}
 
@@ -225,12 +235,14 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 
 func doWithRetry(http *http.Client, req *http.Request) (*http.Response, error) {
 	i := 1
+
 	for {
 		resp, err := http.Do(req)
 		if err == nil {
 			if resp.StatusCode >= 500 {
 				log.Fatalf("Github server error: %d", resp.StatusCode)
 			}
+
 			return resp, nil
 		}
 
@@ -238,6 +250,7 @@ func doWithRetry(http *http.Client, req *http.Request) (*http.Response, error) {
 		if i >= MAX_RETRY {
 			return nil, err
 		}
+
 		time.Sleep(BACKOFF_DELAY * time.Duration(i))
 	}
 }

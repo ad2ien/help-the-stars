@@ -17,6 +17,7 @@ type SettingsService struct {
 // NewSettingsService creates a new SettingsService instance.
 func NewSettingsService(settings *Settings) *SettingsService {
 	settings.checkSettings()
+
 	return &SettingsService{
 		settings: settings,
 	}
@@ -76,6 +77,7 @@ func (s *Settings) GetLabelSlice() []string {
 	for _, match := range matches {
 		labels = append(labels, match[1])
 	}
+
 	return labels
 }
 
@@ -85,6 +87,7 @@ func (ss *SettingsService) GetMaxAge() string {
 	if s.maxAge == "" {
 		s.maxAge = strconv.Itoa(hoursInSeconds * s.Interval)
 	}
+
 	return s.maxAge
 }
 
@@ -92,18 +95,23 @@ func (s *Settings) checkSettings() {
 	if s.GhToken == "" {
 		log.Fatal("Missing Github token")
 	}
+
 	if s.Interval < 1 || s.Interval > 100 {
 		log.Fatal("Invalid interval : should be between 1 and 100 hours")
 	}
+
 	if s.DBFile == "" {
 		log.Fatal("Missing database file path")
 	}
+
 	if !s.IsMatrixConfigured() {
 		log.Warn("Matrix notif not fully configured")
 	}
+
 	if s.Labels == "" {
 		log.Fatal("Missing labels")
 	}
+
 	if s.GetLabelSlice() == nil {
 		log.Fatal("Invalid labels, format should be \"label1\", \"label2\", ...")
 	}

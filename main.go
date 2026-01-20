@@ -61,10 +61,13 @@ func main() {
 	controller := internal.CreateController(db.Connection, matrix, serviceSetting)
 
 	log.Info("Start worker...")
+
 	if *debugFlag {
 		log.SetLevel(log.DebugLevel)
 	}
+
 	log.Debug("Debugging on")
+
 	go controller.Worker()
 
 	server := internal.NewServer(controller, serviceSetting)
