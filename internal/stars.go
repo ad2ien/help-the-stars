@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"text/template"
@@ -16,48 +17,6 @@ import (
 const MAX_RETRY = 3
 const BACKOFF_DELAY = 10 * time.Second
 const MAX_ISSUES_PER_REPO = 5
-
-type GhIssue struct {
-	Title     string
-	Url       string
-	Body      string
-	CreatedAt time.Time
-}
-
-type GhRepository struct {
-	NameWithOwner  string
-	Description    string
-	StargazerCount int
-	Issues         struct {
-		Nodes []GhIssue
-	}
-	Languages struct {
-		Edges []GhLanguageEdge
-	}
-}
-
-type GhLanguageEdge struct {
-	Size int
-	Node GhLanguageNode
-}
-
-type GhLanguageNode struct {
-	Name string
-}
-
-type GhQuery struct {
-	Data struct {
-		Viewer struct {
-			StarredRepositories struct {
-				Nodes    []GhRepository
-				PageInfo struct {
-					EndCursor   string
-					HasNextPage bool
-				}
-			}
-		}
-	}
-}
 
 const GRAPHQL_URL = "https://api.github.com/graphql"
 
@@ -105,36 +64,68 @@ const GRAPHQL_TEMPLATE = `
 }
 `
 
-// Parse the template once at package initialization
-var tmpl = template.Must(template.New("graphql").Parse(GRAPHQL_TEMPLATE))
+var UnexpectedStatusCode = fmt.Errorf("unexpected status code")
 
-func buildQueryFromTemplate(repoCursor string, settingsService *SettingsService) (string, error) {
-	data := struct {
-		RepoCursor string
-		Labels     string
-		MaxIssues  int
-	}{
-		RepoCursor: repoCursor,
-		Labels:     settingsService.GetSettings().Labels,
-		MaxIssues:  MAX_ISSUES_PER_REPO,
-	}
-
-	var query bytes.Buffer
-	err := tmpl.Execute(&query, data)
-	if err != nil {
-		return "", err
-	}
-
-	return query.String(), nil
+type GhStarsService struct {
+	settingsService *SettingsService
+	tmpl            *template.Template
 }
 
-func GetStaredRepos(ctx context.Context, settingsService *SettingsService) ([]Repo, error) {
+type GhIssue struct {
+	Title     string
+	Url       string
+	Body      string
+	CreatedAt time.Time
+}
+
+type GhRepository struct {
+	NameWithOwner  string
+	Description    string
+	StargazerCount int
+	Issues         struct {
+		Nodes []GhIssue
+	}
+	Languages struct {
+		Edges []GhLanguageEdge
+	}
+}
+
+type GhLanguageEdge struct {
+	Size int
+	Node GhLanguageNode
+}
+
+type GhLanguageNode struct {
+	Name string
+}
+
+type GhQuery struct {
+	Data struct {
+		Viewer struct {
+			StarredRepositories struct {
+				Nodes    []GhRepository
+				PageInfo struct {
+					EndCursor   string
+					HasNextPage bool
+				}
+			}
+		}
+	}
+}
+
+func NewGithubStarService(settingsService *SettingsService) *GhStarsService {
+	return &GhStarsService{
+		settingsService: settingsService,
+		tmpl:            template.Must(template.New("graphql").Parse(GRAPHQL_TEMPLATE)),
+	}
+}
+func (ghs *GhStarsService) GetStaredRepos(ctx context.Context) ([]Repo, error) {
 	result := make([]Repo, 0)
 	cursor := ""
 	for {
 		log.Debug("Api call", "cursor", cursor)
 
-		response, err := fetchQueryResults(ctx, settingsService, cursor)
+		response, err := ghs.fetchQueryResults(ctx, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -152,16 +143,36 @@ func GetStaredRepos(ctx context.Context, settingsService *SettingsService) ([]Re
 
 }
 
-func fetchQueryResults(ctx context.Context, settingsService *SettingsService, cursor string) (GhQuery, error) {
+func (ghs *GhStarsService) buildQueryFromTemplate(repoCursor string) (string, error) {
+	data := struct {
+		RepoCursor string
+		Labels     string
+		MaxIssues  int
+	}{
+		RepoCursor: repoCursor,
+		Labels:     ghs.settingsService.GetSettings().Labels,
+		MaxIssues:  MAX_ISSUES_PER_REPO,
+	}
+
+	var query bytes.Buffer
+	err := ghs.tmpl.Execute(&query, data)
+	if err != nil {
+		return "", err
+	}
+
+	return query.String(), nil
+}
+
+func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string) (GhQuery, error) {
 	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: settingsService.GetSettings().GhToken},
+		&oauth2.Token{AccessToken: ghs.settingsService.GetSettings().GhToken},
 	)
 	httpClient := oauth2.NewClient(ctx, src)
 
 	// Create the request body
-	query, err := buildQueryFromTemplate(cursor, settingsService)
+	query, err := ghs.buildQueryFromTemplate(cursor)
 	if err != nil {
-		log.Fatal("Error building query with template", "error", err)
+		log.Error("Error building query with template", "error", err)
 		return GhQuery{}, err
 	}
 
@@ -169,13 +180,15 @@ func fetchQueryResults(ctx context.Context, settingsService *SettingsService, cu
 		"query": query,
 	})
 	if err != nil {
-		log.Fatalf("Error marshaling query: %v", err)
+		log.Error("Error marshaling query: %v", err)
+		return GhQuery{}, err
 	}
 
 	// Create the HTTP request
 	req, err := http.NewRequest("POST", GRAPHQL_URL, bytes.NewBuffer(requestBody))
 	if err != nil {
-		log.Fatalf("Error creating request: %v", err)
+		log.Error("Error creating request: %v", err)
+		return GhQuery{}, err
 	}
 
 	// Set headers
@@ -184,23 +197,27 @@ func fetchQueryResults(ctx context.Context, settingsService *SettingsService, cu
 	// Send the request
 	resp, err := doWithRetry(httpClient, req)
 	if err != nil {
-		log.Fatalf("Error sending request: %v", err)
+		log.Error("Error sending request: %v", err)
+		return GhQuery{}, err
 	}
 	defer closeBody(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Error sending request", "status", resp.Status)
+		log.Error("Error sending request", "status", resp.Status)
+		return GhQuery{}, UnexpectedStatusCode
 	}
 
 	// Read the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error reading response: %v", err)
+		log.Error("Error reading response: %v", err)
+		return GhQuery{}, err
 	}
 
 	var queryResult GhQuery
 	err = json.Unmarshal(body, &queryResult)
 	if err != nil {
-		log.Fatalf("Error unmarshaling response: %v", err)
+		log.Error("Error unmarshaling response: %v", err)
+		return GhQuery{}, err
 	}
 
 	return queryResult, nil
@@ -222,7 +239,6 @@ func doWithRetry(http *http.Client, req *http.Request) (*http.Response, error) {
 			return nil, err
 		}
 		time.Sleep(BACKOFF_DELAY * time.Duration(i))
-
 	}
 }
 
