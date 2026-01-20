@@ -32,7 +32,7 @@ type GhRepository struct {
 	Issues         struct {
 		Nodes []GhIssue
 	}
-	Languages struct{
+	Languages struct {
 		Edges []GhLanguageEdge
 	}
 }
@@ -129,13 +129,13 @@ func buildQueryFromTemplate(repoCursor string) (string, error) {
 	return query.String(), nil
 }
 
-func GetStaredRepos() ([]Repo, error) {
+func GetStaredRepos(ctx context.Context) ([]Repo, error) {
 	result := make([]Repo, 0)
 	cursor := ""
 	for {
 		log.Debug("Api call", "cursor", cursor)
 
-		response, err := fetchQueryResults(cursor)
+		response, err := fetchQueryResults(ctx, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -153,11 +153,11 @@ func GetStaredRepos() ([]Repo, error) {
 
 }
 
-func fetchQueryResults(cursor string) (GhQuery, error) {
+func fetchQueryResults(ctx context.Context, cursor string) (GhQuery, error) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: GetSettings().GhToken},
 	)
-	httpClient := oauth2.NewClient(context.Background(), src)
+	httpClient := oauth2.NewClient(ctx, src)
 
 	// Create the request body
 	query, err := buildQueryFromTemplate(cursor)
@@ -187,10 +187,10 @@ func fetchQueryResults(cursor string) (GhQuery, error) {
 	if err != nil {
 		log.Fatalf("Error sending request: %v", err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		log.Fatal("Error sending request", "status", resp.Status)
 	}
-	defer closeBody(resp.Body)
 
 	// Read the response
 	body, err := io.ReadAll(resp.Body)

@@ -14,7 +14,7 @@ type MatrixClient struct {
 	client *mautrix.Client
 }
 
-func CreateMatrixClient() *MatrixClient {
+func CreateMatrixClient(ctx context.Context) *MatrixClient {
 
 	if !GetSettings().IsMatrixConfigured() {
 		return nil
@@ -27,7 +27,7 @@ func CreateMatrixClient() *MatrixClient {
 		log.Fatal(err)
 	}
 
-	resp, err := client.Login(context.Background(), &mautrix.ReqLogin{
+	resp, err := client.Login(ctx, &mautrix.ReqLogin{
 		Type: mautrix.AuthTypePassword,
 		Identifier: mautrix.UserIdentifier{
 			User: GetSettings().MatrixUsername,
@@ -46,7 +46,7 @@ func CreateMatrixClient() *MatrixClient {
 	}
 }
 
-func (c *MatrixClient) Notify(issue *HelpWantedIssue) {
+func (c *MatrixClient) Notify(ctx context.Context, issue *HelpWantedIssue) {
 
 	message := fmt.Sprintf("Help wanted for new issue :\n%s\n%s", issue.Title, issue.Url)
 
@@ -54,14 +54,14 @@ func (c *MatrixClient) Notify(issue *HelpWantedIssue) {
 		MsgType: event.MsgText,
 		Body:    message,
 	}
-	_, err := c.client.SendMessageEvent(context.Background(),
+	_, err := c.client.SendMessageEvent(ctx,
 		id.RoomID(GetSettings().MatrixRoomID), event.EventMessage, content)
 	if err != nil {
 		log.Error(err)
 	}
 }
 
-func (c *MatrixClient) NotifySeveralNewIssues() {
+func (c *MatrixClient) NotifySeveralNewIssues(ctx context.Context) {
 
 	message := "Help wanted for several new issues. Could be worth checking Help-the-stars interface ⭐"
 
@@ -69,7 +69,7 @@ func (c *MatrixClient) NotifySeveralNewIssues() {
 		MsgType: event.MsgText,
 		Body:    message,
 	}
-	_, err := c.client.SendMessageEvent(context.Background(),
+	_, err := c.client.SendMessageEvent(ctx,
 		id.RoomID(GetSettings().MatrixRoomID), event.EventMessage, content)
 	if err != nil {
 		log.Error(err)

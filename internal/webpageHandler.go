@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"net/http"
@@ -25,8 +26,11 @@ func CreateWebpageHandler(dataController *DataController, templates *embed.FS) *
 }
 
 func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	// return 304 if possible
-	etag, err := wph.dataController.GetLastRun()
+	etag, err := wph.dataController.GetLastRun(ctx)
 	if err != nil {
 		log.Error("Error getting last run time:", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -44,7 +48,7 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 		"buildHelpIssuesLink": buildHelpIssuesLink,
 	}).ParseFS(wph.templates, "templates/index.html"))
 
-	data, err := wph.dataController.GetDataForView()
+	data, err := wph.dataController.GetDataForView(ctx)
 	if err != nil {
 		log.Error("Error getting data:", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

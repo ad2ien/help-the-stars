@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	"fmt"
@@ -51,7 +52,7 @@ func main() {
 
 	internal.GetSettings().Print()
 
-	matrix := internal.CreateMatrixClient()
+	matrix := internal.CreateMatrixClient(context.Background())
 
 	db := internal.NewConnection(Migrations)
 	defer db.Close()
