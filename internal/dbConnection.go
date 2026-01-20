@@ -3,6 +3,7 @@ package internal
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,6 +16,8 @@ import (
 )
 
 const dbFileName = "db/help-the-stars.db"
+
+var ErrNoValidMigrations = errors.New("no valid migrations found")
 
 type DbConnection struct {
 	Connection *sql.DB
@@ -70,7 +73,7 @@ func ensureSchema(migrations embed.FS, db *sql.DB) error {
 	}
 
 	err = m.Migrate(latestVersion)
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return sourceInstance.Close()
@@ -98,7 +101,7 @@ func getLatestMigrationVersion(migrations embed.FS) (uint, error) {
 	}
 
 	if maxVersion == 0 {
-		return 0, fmt.Errorf("no valid migrations found")
+		return 0, ErrNoValidMigrations
 	}
 
 	return maxVersion, nil

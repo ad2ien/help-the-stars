@@ -31,7 +31,7 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 				IssueDescription: string(issue.Body),
 				Url:              string(issue.Url),
 				CreationDate:     issue.CreatedAt,
-				RepoWithOwner:        ghRepo.NameWithOwner,
+				RepoWithOwner:    ghRepo.NameWithOwner,
 			}
 			r.Issues = append(r.Issues, helpWantedIssue)
 
@@ -98,12 +98,12 @@ func mapDbIssuesToViewRepos(issues []persistence.Issue, repos []persistence.Repo
 
 		filteredIssues, lastIssueDate := findIssuesAndLastIssueDateByRepoOwner(repo.RepoWithOwner, issues)
 		result[i] = Repo{
-			RepoOwner:       repo.RepoWithOwner,
-			RepoDescription: repo.Description.String,
-			StargazersCount: int(repo.StargazersCount.Int64),
-			Language:        repo.Language.String,
-			Issues:          filteredIssues,
-			LastIssueCreationTime:   lastIssueDate,
+			RepoOwner:             repo.RepoWithOwner,
+			RepoDescription:       repo.Description.String,
+			StargazersCount:       int(repo.StargazersCount.Int64),
+			Language:              repo.Language.String,
+			Issues:                filteredIssues,
+			LastIssueCreationTime: lastIssueDate,
 		}
 	}
 
@@ -129,7 +129,7 @@ func mapDbIssueToViewIssue(issue persistence.Issue) HelpWantedIssue {
 		IssueDescription: issue.Description,
 		Url:              issue.Url,
 		CreationDate:     issue.CreationDate,
-		RepoWithOwner:        issue.RepoWithOwner,
+		RepoWithOwner:    issue.RepoWithOwner,
 	}
 }
 
@@ -151,11 +151,11 @@ func flattenIssues(repos []Repo) []HelpWantedIssue {
 
 func mapDbRepoToViewRepo(repo persistence.Repo) Repo {
 	return Repo{
-		RepoOwner:       repo.RepoWithOwner,
-		RepoDescription: repo.Description.String,
-		StargazersCount: int(repo.StargazersCount.Int64),
-		Language:        repo.Language.String,
-		Issues:          nil,
+		RepoOwner:             repo.RepoWithOwner,
+		RepoDescription:       repo.Description.String,
+		StargazersCount:       int(repo.StargazersCount.Int64),
+		Language:              repo.Language.String,
+		Issues:                nil,
 		LastIssueCreationTime: time.Time{},
 	}
 }

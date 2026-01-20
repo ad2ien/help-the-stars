@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -74,11 +75,11 @@ func (d *DataController) Worker() {
 
 	for {
 		taskData, err := d.queries.GetTaskData(ctx)
-		if err != nil && err != sql.ErrNoRows {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			log.Fatal(err)
 		}
 
-		if err == sql.ErrNoRows ||
+		if errors.Is(err, sql.ErrNoRows) ||
 			!taskData.LastRun.Valid ||
 			(taskData.LastRun.Valid &&
 				time.Since(taskData.LastRun.Time) > time.Hour*time.Duration(GetSettings().Interval)) {

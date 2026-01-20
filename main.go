@@ -4,7 +4,6 @@ import (
 	"context"
 	"embed"
 	"flag"
-	"fmt"
 	"help-the-stars/internal"
 
 	"github.com/charmbracelet/log"
@@ -21,9 +20,10 @@ var staticFiles embed.FS
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage of Help the stars ⭐")
-		fmt.Println("  https://github.com/ad2ien/help-the-stars/")
-		fmt.Println("\nFlags:")
+		log.Info("Usage of Help the stars ⭐")
+		log.Info("  https://github.com/ad2ien/help-the-stars/")
+		log.Info("")
+		log.Info("Flags:")
 		flag.PrintDefaults()
 	}
 

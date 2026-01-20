@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"text/template"
@@ -123,7 +122,7 @@ func buildQueryFromTemplate(repoCursor string) (string, error) {
 	var query bytes.Buffer
 	err := tmpl.Execute(&query, data)
 	if err != nil {
-		return "", fmt.Errorf("error executing template: %v", err)
+		return "", err
 	}
 
 	return query.String(), nil
@@ -187,7 +186,7 @@ func fetchQueryResults(ctx context.Context, cursor string) (GhQuery, error) {
 	if err != nil {
 		log.Fatalf("Error sending request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		log.Fatal("Error sending request", "status", resp.Status)
 	}
