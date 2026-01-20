@@ -46,6 +46,18 @@ func (d *DataController) GetDataForView() (ThankStarsData, error) {
 	return mapDbResultToViewModel(issues, repos, taskData), nil
 }
 
+func (d *DataController) GetLastRun(ctx context.Context) (string, error) {
+	taskData, err := d.queries.GetTaskData(ctx)
+	if err != nil {
+		return "", err
+	}
+	if taskData.LastRun.Valid {
+		return taskData.LastRun.Time.String(), nil
+	}
+	// maybe first loading in progress
+	return "", nil
+}
+
 func (d *DataController) Worker() {
 	log.Info("start worker...")
 

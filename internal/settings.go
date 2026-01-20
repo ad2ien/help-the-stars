@@ -2,6 +2,7 @@ package internal
 
 import (
 	"regexp"
+	"strconv"
 
 	"github.com/charmbracelet/log"
 )
@@ -21,6 +22,8 @@ type Settings struct {
 	MatrixUsername string
 	MatrixPassword string
 	MatrixServer   string
+
+	maxAge string
 }
 
 func GetSettings() *Settings {
@@ -82,4 +85,11 @@ func (s *Settings) Print() {
 	log.Infof("  Matrix username: %s", s.MatrixUsername)
 	log.Info("  Matrix password: ***")
 	log.Infof("  Matrix server: %s", s.MatrixServer)
+}
+
+func (s *Settings) GetMaxAge() string {
+	if s.maxAge == "" {
+		s.maxAge = strconv.Itoa(3600 * s.Interval)
+	}
+	return s.maxAge
 }

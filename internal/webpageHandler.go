@@ -25,6 +25,18 @@ func CreateWebpageHandler(dataController *DataController, templates *embed.FS) *
 }
 
 func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request) {
+	// return 304 if possible
+	etag, err := wph.dataController.GetLastRun()
+	if err != nil {
+		log.Error("Error getting last run time:", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
 
 	tmpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
 		"truncate":            truncate,
@@ -35,13 +47,15 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 	data, err := wph.dataController.GetDataForView()
 	if err != nil {
 		log.Error("Error getting data:", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else {
-		err := tmpl.Execute(w, data)
-		if err != nil {
-			log.Error("Error executing template:", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", "public, max-age="+GetSettings().GetMaxAge())
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		log.Error("Error executing template:", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 
