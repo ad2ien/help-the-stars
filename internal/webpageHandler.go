@@ -14,14 +14,18 @@ import (
 )
 
 type WebpageHandler struct {
-	dataController *DataController
-	templates      *embed.FS
+	dataController  *DataController
+	templates       *embed.FS
+	settingsService *SettingsService
 }
 
-func CreateWebpageHandler(dataController *DataController, templates *embed.FS) *WebpageHandler {
+func CreateWebpageHandler(dataController *DataController,
+	settingsService *SettingsService,
+	templates *embed.FS) *WebpageHandler {
 	return &WebpageHandler{
-		dataController: dataController,
-		templates:      templates,
+		dataController:  dataController,
+		settingsService: settingsService,
+		templates:       templates,
 	}
 }
 
@@ -45,7 +49,7 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 	tmpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
 		"truncate":            truncate,
 		"date":                formatDate,
-		"buildHelpIssuesLink": buildHelpIssuesLink,
+		"buildHelpIssuesLink": wph.buildHelpIssuesLink,
 	}).ParseFS(wph.templates, "templates/index.html"))
 
 	data, err := wph.dataController.GetDataForView(ctx)
@@ -55,7 +59,7 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.Header().Set("ETag", etag)
-	w.Header().Set("Cache-Control", "public, max-age="+GetSettings().GetMaxAge())
+	w.Header().Set("Cache-Control", "public, max-age="+wph.settingsService.GetMaxAge())
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		log.Error("Error executing template:", "error", err)
@@ -76,15 +80,15 @@ func truncate(s string, length int) string {
 
 const ISSUE_LINK_PARAM = "issues?q=is%3Aissue%20state%3Aopen%20"
 
-func buildHelpIssuesLink(repoOwner string) string {
-	return fmt.Sprintf("https://github.com/%s/%s%s", repoOwner, ISSUE_LINK_PARAM, labelsToGhUrlParam())
+func (wph *WebpageHandler) buildHelpIssuesLink(repoOwner string) string {
+	return fmt.Sprintf("https://github.com/%s/%s%s", repoOwner, ISSUE_LINK_PARAM, wph.labelsToGhUrlParam())
 }
 
 // TransformLabels transforms a string like `"good first issue", "help wanted"`
 // into `(label%3A%22good%20first%20issue%22%20OR%20label%3A%22help%20wanted%22)`.
 // to have something like https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted")
-func labelsToGhUrlParam() string {
-	labelSettings := GetSettings().GetLabelSlice()
+func (wph *WebpageHandler) labelsToGhUrlParam() string {
+	labelSettings := wph.settingsService.GetSettings().GetLabelSlice()
 
 	var labels []string
 	for _, label := range labelSettings {

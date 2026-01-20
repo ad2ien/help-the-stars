@@ -7,8 +7,22 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-var settings *Settings
+const hoursInSeconds = 3600
 
+// SettingsService provides access to app settings.
+type SettingsService struct {
+	settings *Settings
+}
+
+// NewSettingsService creates a new SettingsService instance.
+func NewSettingsService(settings *Settings) *SettingsService {
+	settings.checkSettings()
+	return &SettingsService{
+		settings: settings,
+	}
+}
+
+// Settings of the app.
 type Settings struct {
 	GhToken string
 	// Hours interval between Github queries
@@ -17,7 +31,7 @@ type Settings struct {
 	// labels to look for
 	// ex: "\"help-wanted\", \"help wanted\",\"junior friendly\",\"good first issue\""
 	Labels string
-	//optional
+	// optional
 	MatrixRoomID   string
 	MatrixUsername string
 	MatrixPassword string
@@ -26,20 +40,52 @@ type Settings struct {
 	maxAge string
 }
 
-func GetSettings() *Settings {
-	return settings
+// GetSettings : Get all the settings.
+func (ss *SettingsService) GetSettings() *Settings {
+	return ss.settings
 }
 
-func SetSettings(localSettings *Settings) {
-	localSettings.checkSettings()
-	settings = localSettings
+// Print settings.
+func (ss *SettingsService) Print() {
+	log.Info("Settings:")
+	log.Info("  Github token: **")
+	log.Infof("  Interval: %d hours", ss.GetSettings().Interval)
+	log.Infof("  Database file: %s", ss.GetSettings().DBFile)
+	log.Infof("  Labels: %s", ss.GetSettings().Labels)
+	log.Infof("  Matrix room ID: %s", ss.GetSettings().MatrixRoomID)
+	log.Infof("  Matrix username: %s", ss.GetSettings().MatrixUsername)
+	log.Info("  Matrix password: ***")
+	log.Infof("  Matrix server: %s", ss.GetSettings().MatrixServer)
 }
 
+// IsMatrixConfigured checks if matrix configuration is complete.
 func (s *Settings) IsMatrixConfigured() bool {
 	return s.MatrixRoomID != "" &&
 		s.MatrixUsername != "" &&
 		s.MatrixPassword != "" &&
 		s.MatrixServer != ""
+}
+
+// GetLabelSlice gets label slice from settings.
+func (s *Settings) GetLabelSlice() []string {
+	// Regex to extract labels inside double quotes
+	re := regexp.MustCompile(`"([^"]+)"`)
+	matches := re.FindAllStringSubmatch(s.Labels, -1)
+
+	var labels = make([]string, len(matches))
+	for _, match := range matches {
+		labels = append(labels, match[1])
+	}
+	return labels
+}
+
+// GetMaxAge gets the max time before which data is not fresh anymore.
+func (ss *SettingsService) GetMaxAge() string {
+	s := ss.GetSettings()
+	if s.maxAge == "" {
+		s.maxAge = strconv.Itoa(hoursInSeconds * s.Interval)
+	}
+	return s.maxAge
 }
 
 func (s *Settings) checkSettings() {
@@ -61,35 +107,4 @@ func (s *Settings) checkSettings() {
 	if s.GetLabelSlice() == nil {
 		log.Fatal("Invalid labels, format should be \"label1\", \"label2\", ...")
 	}
-}
-
-func (s *Settings) GetLabelSlice() []string {
-	// Regex to extract labels inside double quotes
-	re := regexp.MustCompile(`"([^"]+)"`)
-	matches := re.FindAllStringSubmatch(s.Labels, -1)
-
-	var labels []string
-	for _, match := range matches {
-		labels = append(labels, match[1])
-	}
-	return labels
-}
-
-func (s *Settings) Print() {
-	log.Info("Settings:")
-	log.Info("  Github token: **")
-	log.Infof("  Interval: %d hours", s.Interval)
-	log.Infof("  Database file: %s", s.DBFile)
-	log.Infof("  Labels: %s", s.Labels)
-	log.Infof("  Matrix room ID: %s", s.MatrixRoomID)
-	log.Infof("  Matrix username: %s", s.MatrixUsername)
-	log.Info("  Matrix password: ***")
-	log.Infof("  Matrix server: %s", s.MatrixServer)
-}
-
-func (s *Settings) GetMaxAge() string {
-	if s.maxAge == "" {
-		s.maxAge = strconv.Itoa(3600 * s.Interval)
-	}
-	return s.maxAge
 }

@@ -108,14 +108,14 @@ const GRAPHQL_TEMPLATE = `
 // Parse the template once at package initialization
 var tmpl = template.Must(template.New("graphql").Parse(GRAPHQL_TEMPLATE))
 
-func buildQueryFromTemplate(repoCursor string) (string, error) {
+func buildQueryFromTemplate(repoCursor string, settingsService *SettingsService) (string, error) {
 	data := struct {
 		RepoCursor string
 		Labels     string
 		MaxIssues  int
 	}{
 		RepoCursor: repoCursor,
-		Labels:     GetSettings().Labels,
+		Labels:     settingsService.GetSettings().Labels,
 		MaxIssues:  MAX_ISSUES_PER_REPO,
 	}
 
@@ -128,13 +128,13 @@ func buildQueryFromTemplate(repoCursor string) (string, error) {
 	return query.String(), nil
 }
 
-func GetStaredRepos(ctx context.Context) ([]Repo, error) {
+func GetStaredRepos(ctx context.Context, settingsService *SettingsService) ([]Repo, error) {
 	result := make([]Repo, 0)
 	cursor := ""
 	for {
 		log.Debug("Api call", "cursor", cursor)
 
-		response, err := fetchQueryResults(ctx, cursor)
+		response, err := fetchQueryResults(ctx, settingsService, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -152,14 +152,14 @@ func GetStaredRepos(ctx context.Context) ([]Repo, error) {
 
 }
 
-func fetchQueryResults(ctx context.Context, cursor string) (GhQuery, error) {
+func fetchQueryResults(ctx context.Context, settingsService *SettingsService, cursor string) (GhQuery, error) {
 	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: GetSettings().GhToken},
+		&oauth2.Token{AccessToken: settingsService.GetSettings().GhToken},
 	)
 	httpClient := oauth2.NewClient(ctx, src)
 
 	// Create the request body
-	query, err := buildQueryFromTemplate(cursor)
+	query, err := buildQueryFromTemplate(cursor, settingsService)
 	if err != nil {
 		log.Fatal("Error building query with template", "error", err)
 		return GhQuery{}, err

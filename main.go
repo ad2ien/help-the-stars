@@ -39,25 +39,26 @@ func main() {
 
 	flag.Parse()
 
-	internal.SetSettings(&internal.Settings{
-		GhToken:        *ghTokenFlag,
-		Interval:       *interval,
-		Labels:         *labels,
-		DBFile:         *dbFile,
-		MatrixServer:   *matrixServer,
-		MatrixUsername: *matrixUsername,
-		MatrixPassword: *matrixPassword,
-		MatrixRoomID:   *matrixRoomID,
-	})
+	serviceSetting := internal.NewSettingsService(
+		&internal.Settings{
+			GhToken:        *ghTokenFlag,
+			Interval:       *interval,
+			Labels:         *labels,
+			DBFile:         *dbFile,
+			MatrixServer:   *matrixServer,
+			MatrixUsername: *matrixUsername,
+			MatrixPassword: *matrixPassword,
+			MatrixRoomID:   *matrixRoomID,
+		})
 
-	internal.GetSettings().Print()
+	serviceSetting.Print()
 
-	matrix := internal.CreateMatrixClient(context.Background())
+	matrix := internal.CreateMatrixClient(context.Background(), serviceSetting)
 
-	db := internal.NewConnection(Migrations)
+	db := internal.NewConnection(Migrations, serviceSetting)
 	defer db.Close()
 
-	controller := internal.CreateController(db.Connection, matrix)
+	controller := internal.CreateController(db.Connection, matrix, serviceSetting)
 
 	log.Info("Start worker...")
 	if *debugFlag {
@@ -66,6 +67,6 @@ func main() {
 	log.Debug("Debugging on")
 	go controller.Worker()
 
-	server := internal.NewServer(controller)
+	server := internal.NewServer(controller, serviceSetting)
 	server.Start(&templates, &staticFiles)
 }

@@ -9,18 +9,20 @@ import (
 
 type Server struct {
 	controller *DataController
+	settingsService *SettingsService
 }
 
-func NewServer(controller *DataController) *Server {
+func NewServer(controller *DataController, settingsService *SettingsService) *Server {
 	return &Server{
-		controller: controller,
+		controller:        controller,
+		settingsService:   settingsService,
 	}
 }
 
 func (s *Server) Start(templates *embed.FS, staticFiles *embed.FS) {
 	log.Info("Start server...")
 
-	webpageHandler := CreateWebpageHandler(s.controller, templates)
+	webpageHandler := CreateWebpageHandler(s.controller, s.settingsService, templates)
 
 	// Serve static files
 	staticHandler := http.FileServer(http.FS(staticFiles))

@@ -12,16 +12,17 @@ import (
 
 type MatrixClient struct {
 	client *mautrix.Client
+	MatrixRoomID string
 }
 
-func CreateMatrixClient(ctx context.Context) *MatrixClient {
+func CreateMatrixClient(ctx context.Context, settingsService *SettingsService) *MatrixClient {
 
-	if !GetSettings().IsMatrixConfigured() {
+	if !settingsService.GetSettings().IsMatrixConfigured() {
 		return nil
 	}
 
-	client, err := mautrix.NewClient(GetSettings().MatrixServer,
-		id.UserID(GetSettings().MatrixUsername),
+	client, err := mautrix.NewClient(settingsService.GetSettings().MatrixServer,
+		id.UserID(settingsService.GetSettings().MatrixUsername),
 		"")
 	if err != nil {
 		log.Fatal(err)
@@ -30,10 +31,10 @@ func CreateMatrixClient(ctx context.Context) *MatrixClient {
 	resp, err := client.Login(ctx, &mautrix.ReqLogin{
 		Type: mautrix.AuthTypePassword,
 		Identifier: mautrix.UserIdentifier{
-			User: GetSettings().MatrixUsername,
+			User: settingsService.GetSettings().MatrixUsername,
 			Type: mautrix.IdentifierTypeUser,
 		},
-		Password:         GetSettings().MatrixPassword,
+		Password:         settingsService.GetSettings().MatrixPassword,
 		StoreCredentials: true,
 	})
 	if err != nil {
@@ -43,6 +44,7 @@ func CreateMatrixClient(ctx context.Context) *MatrixClient {
 
 	return &MatrixClient{
 		client: client,
+		MatrixRoomID: settingsService.GetSettings().MatrixRoomID,
 	}
 }
 
@@ -55,7 +57,7 @@ func (c *MatrixClient) Notify(ctx context.Context, issue *HelpWantedIssue) {
 		Body:    message,
 	}
 	_, err := c.client.SendMessageEvent(ctx,
-		id.RoomID(GetSettings().MatrixRoomID), event.EventMessage, content)
+		id.RoomID(c.MatrixRoomID), event.EventMessage, content)
 	if err != nil {
 		log.Error(err)
 	}
@@ -70,7 +72,7 @@ func (c *MatrixClient) NotifySeveralNewIssues(ctx context.Context) {
 		Body:    message,
 	}
 	_, err := c.client.SendMessageEvent(ctx,
-		id.RoomID(GetSettings().MatrixRoomID), event.EventMessage, content)
+		id.RoomID(c.MatrixRoomID), event.EventMessage, content)
 	if err != nil {
 		log.Error(err)
 	}

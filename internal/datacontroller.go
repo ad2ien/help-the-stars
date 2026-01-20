@@ -16,14 +16,18 @@ const MAX_ISSUE_NOTIFS = 7
 const CHECK_INTERVAL_S = 3000
 
 type DataController struct {
-	queries      *persistence.Queries
-	matrixClient *MatrixClient
+	queries         *persistence.Queries
+	matrixClient    *MatrixClient
+	settingsService *SettingsService
 }
 
-func CreateController(db *sql.DB, matrixClient *MatrixClient) *DataController {
+func CreateController(db *sql.DB,
+	matrixClient *MatrixClient,
+	settingsService *SettingsService) *DataController {
 	return &DataController{
-		queries:      persistence.New(db),
-		matrixClient: matrixClient,
+		queries:         persistence.New(db),
+		matrixClient:    matrixClient,
+		settingsService: settingsService,
 	}
 }
 
@@ -82,7 +86,7 @@ func (d *DataController) Worker() {
 		if errors.Is(err, sql.ErrNoRows) ||
 			!taskData.LastRun.Valid ||
 			(taskData.LastRun.Valid &&
-				time.Since(taskData.LastRun.Time) > time.Hour*time.Duration(GetSettings().Interval)) {
+				time.Since(taskData.LastRun.Time) > time.Hour*time.Duration(d.settingsService.settings.Interval)) {
 			log.Info("worker : time elapsed, get data...")
 			d.GetAndSaveIssues(ctx)
 
@@ -102,7 +106,7 @@ func (d *DataController) GetAndSaveIssues(ctx context.Context) {
 	}
 
 	log.Info("Loading issues...")
-	repos, err := GetStaredRepos(ctx)
+	repos, err := GetStaredRepos(ctx, d.settingsService)
 	if err != nil {
 		log.Fatal(err)
 	}

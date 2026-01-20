@@ -23,9 +23,9 @@ type DbConnection struct {
 	Connection *sql.DB
 }
 
-func NewConnection(migrationsFs embed.FS) DbConnection {
+func NewConnection(migrationsFs embed.FS, settingsService *SettingsService) DbConnection {
 
-	configDbFile := GetSettings().DBFile
+	configDbFile := settingsService.settings.DBFile
 	if configDbFile == "" {
 		configDbFile = dbFileName
 	}
