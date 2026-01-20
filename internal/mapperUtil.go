@@ -8,7 +8,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// map GhQuery to HelpWantedIssue only if there's an issue
+// mapGhQueryToHelpWantedIssue maps GhQuery to HelpWantedIssue
+// only if there's an issue.
 func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 	var repos []Repo
 
@@ -110,8 +111,10 @@ func mapDbIssuesToViewRepos(issues []persistence.Issue, repos []persistence.Repo
 	return result
 }
 
-func findIssuesAndLastIssueDateByRepoOwner(repoOwner string, issues []persistence.Issue) (filteredIssues []HelpWantedIssue,
-	lastIssueDate time.Time) {
+func findIssuesAndLastIssueDateByRepoOwner(
+	repoOwner string,
+	issues []persistence.Issue) (
+	filteredIssues []HelpWantedIssue, lastIssueDate time.Time) {
 	for _, issue := range issues {
 		if issue.RepoWithOwner == repoOwner {
 			filteredIssues = append(filteredIssues, mapDbIssueToViewIssue(issue))

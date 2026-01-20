@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -42,15 +43,17 @@ func CreateController(database *sql.DB,
 func (d *DataController) GetDataForView(ctx context.Context) (ThankStarsData, error) {
 	repos, err := d.queries.ListRepos(ctx)
 	if err != nil {
-		return ThankStarsData{}, err
+		return ThankStarsData{}, fmt.Errorf("failed to list repos: %w", err)
 	}
+
 	issues, err := d.queries.ListIssues(ctx)
 	if err != nil {
-		return ThankStarsData{}, err
+		return ThankStarsData{}, fmt.Errorf("failed to list issues: %w", err)
 	}
+
 	taskData, err := d.queries.GetTaskData(ctx)
 	if err != nil {
-		return ThankStarsData{}, err
+		return ThankStarsData{}, fmt.Errorf("failed to get task data: %w", err)
 	}
 
 	return mapDbResultToViewModel(issues, repos, taskData), nil
@@ -60,8 +63,9 @@ func (d *DataController) GetDataForView(ctx context.Context) (ThankStarsData, er
 func (d *DataController) GetLastRun(ctx context.Context) (string, error) {
 	taskData, err := d.queries.GetTaskData(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get task data: %w", err)
 	}
+
 	if taskData.LastRun.Valid {
 		return taskData.LastRun.Time.String(), nil
 	}
@@ -73,14 +77,17 @@ func (d *DataController) GetLastRun(ctx context.Context) (string, error) {
 // an endless loop checking for new data.
 func (d *DataController) Worker() {
 	log.Info("start worker...")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	initTaskData, err := d.queries.GetTaskData(ctx)
 	if err != nil {
 		log.Info("Init task data...")
+
 		err = d.queries.InitTaskData(ctx)
 	}
+
 	if err != nil {
 		log.Error("Error initializing task data", "error", err)
 
@@ -98,6 +105,7 @@ func (d *DataController) Worker() {
 
 			return
 		}
+
 		d.checkAndDo(ctx, &taskData, err)
 
 		log.Debug(".")
@@ -111,6 +119,7 @@ func (d *DataController) checkAndDo(ctx context.Context, taskData *persistence.T
 		(taskData.LastRun.Valid &&
 			time.Since(taskData.LastRun.Time) > time.Hour*time.Duration(d.settingsService.settings.Interval)) {
 		log.Info("worker : time elapsed, get data...")
+
 		if err := d.getAndSaveIssues(ctx); err != nil {
 			return
 		}
@@ -119,14 +128,14 @@ func (d *DataController) checkAndDo(ctx context.Context, taskData *persistence.T
 
 func (d *DataController) getAndSaveIssues(ctx context.Context) error {
 	err := d.queries.TaskDataInProgress(ctx)
-
 	if err != nil {
 		log.Error("Error getting starred repos", "error", err)
 
-		return err
+		return fmt.Errorf("failed to set task data in progress: %w", err)
 	}
 
 	log.Info("Loading issues...")
+
 	repos, err := d.ghStarsService.GetStaredRepos(ctx)
 	if err != nil {
 		log.Error("Error listing issues from database", "error", err)
@@ -145,14 +154,16 @@ func (d *DataController) getAndSaveIssues(ctx context.Context) error {
 	if err != nil {
 		log.Error("Error listing repos from database", "error", err)
 
-		return err
+		return fmt.Errorf("failed to list issues: %w", err)
 	}
+
 	issuesFromDb := mapDbIssuesToViewIssues(dbIssues)
 
 	dbRepos, err := d.queries.ListRepos(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	reposFromDb := mapDbReposToViewRepos(dbRepos)
 
 	newIssues, expiredIssues := sortNewAndExpired(ghIssues, issuesFromDb)
@@ -170,7 +181,7 @@ func (d *DataController) getAndSaveIssues(ctx context.Context) error {
 	if err != nil {
 		log.Error("Error updating task data", "error", err)
 
-		return err
+		return fmt.Errorf("failed to update task data: %w", err)
 	}
 
 	return nil
@@ -180,6 +191,7 @@ func (d *DataController) deleteIssues(ctx context.Context,
 	expiredIssues []HelpWantedIssue) {
 	for i := range expiredIssues {
 		log.Info("Delete an issue ", "url", expiredIssues[i].Url)
+
 		delErr := d.queries.DeleteIssue(ctx, expiredIssues[i].Url)
 		if delErr != nil {
 			log.Error("Error deleting issue", "error", delErr)
@@ -190,9 +202,9 @@ func (d *DataController) deleteIssues(ctx context.Context,
 func (d *DataController) createRepos(ctx context.Context, repos []Repo) {
 	for _, r := range repos {
 		log.Info("Save a repo " + r.RepoOwner)
+
 		_, createErr := d.queries.CreateRepo(ctx,
 			mapModelToRepoDbParameter(r))
-
 		if createErr != nil {
 			if strings.Contains(createErr.Error(), "UNIQUE constraint") {
 				log.Info("Repo already exists")
@@ -206,9 +218,9 @@ func (d *DataController) createRepos(ctx context.Context, repos []Repo) {
 func (d *DataController) createIssues(ctx context.Context, issues []HelpWantedIssue) {
 	for _, i := range issues {
 		log.Info("Save an issue " + i.Url)
+
 		_, createErr := d.queries.CreateIssue(ctx,
 			mapModelToIssueDbParameter(i))
-
 		if createErr != nil {
 			if strings.Contains(createErr.Error(), "UNIQUE constraint") {
 				log.Info("Issue already exists")
@@ -222,6 +234,7 @@ func (d *DataController) createIssues(ctx context.Context, issues []HelpWantedIs
 func (d *DataController) deleteRepos(ctx context.Context, expiredRepos []Repo) {
 	for i := range expiredRepos {
 		log.Info("Delete repo", "repo", expiredRepos[i].RepoOwner)
+
 		delErr := d.queries.DeleteRepo(ctx, expiredRepos[i].RepoOwner)
 		if delErr != nil {
 			log.Error("Error deleting issue", "error", delErr)
@@ -234,15 +247,18 @@ func (d *DataController) handleNotifications(ctx context.Context,
 	if d.matrixClient == nil {
 		return
 	}
+
 	if issues == nil {
 		return
 	}
+
 	if len(issues) > maxNumOfIssues {
 		log.Info("Notify many issues")
 		d.matrixClient.NotifySeveralNewIssues(ctx)
 
 		return
 	}
+
 	for i := range issues {
 		log.Info("Notify an issue " + issues[i].Url)
 		d.matrixClient.Notify(ctx, &issues[i])
@@ -253,6 +269,7 @@ func (d *DataController) handleNotifications(ctx context.Context,
 func sortNewAndExpired[T HasKey](incoming []T, issuesFromDb []T) (newOnes []T, expiredOnes []T) {
 	for _, object := range incoming {
 		found := false
+
 		for _, issue := range issuesFromDb {
 			if issue.Key() == object.Key() {
 				found = true
@@ -260,6 +277,7 @@ func sortNewAndExpired[T HasKey](incoming []T, issuesFromDb []T) (newOnes []T, e
 				break
 			}
 		}
+
 		if !found {
 			newOnes = append(newOnes, object)
 		}
@@ -267,6 +285,7 @@ func sortNewAndExpired[T HasKey](incoming []T, issuesFromDb []T) (newOnes []T, e
 
 	for _, issue := range issuesFromDb {
 		found := false
+
 		for _, object := range incoming {
 			if issue.Key() == object.Key() {
 				found = true
@@ -274,6 +293,7 @@ func sortNewAndExpired[T HasKey](incoming []T, issuesFromDb []T) (newOnes []T, e
 				break
 			}
 		}
+
 		if !found {
 			expiredOnes = append(expiredOnes, issue)
 		}

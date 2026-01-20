@@ -6,7 +6,7 @@ type HasKey interface {
 	Key() string
 }
 
-// Used to notify
+// HelpWantedIssue is used to notify.
 type HelpWantedIssue struct {
 	Url              string
 	Title            string
@@ -19,7 +19,7 @@ func (i HelpWantedIssue) Key() string {
 	return i.Url
 }
 
-// Used to display an web interface
+// Repo is used to display an web interface.
 type Repo struct {
 	RepoOwner             string
 	RepoDescription       string

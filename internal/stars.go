@@ -64,7 +64,7 @@ const GRAPHQL_TEMPLATE = `
 }
 `
 
-var UnexpectedStatusCode = fmt.Errorf("unexpected status code")
+var ErrUnexpectedStatusCode = fmt.Errorf("unexpected status code")
 
 type GhStarsService struct {
 	settingsService *SettingsService
@@ -203,7 +203,7 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	defer closeBody(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		log.Error("Error sending request", "status", resp.Status)
-		return GhQuery{}, UnexpectedStatusCode
+		return GhQuery{}, ErrUnexpectedStatusCode
 	}
 
 	// Read the response

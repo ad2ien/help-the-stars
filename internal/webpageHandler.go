@@ -86,7 +86,7 @@ func (wph *WebpageHandler) buildHelpIssuesLink(repoOwner string) string {
 
 // TransformLabels transforms a string like `"good first issue", "help wanted"`
 // into `(label%3A%22good%20first%20issue%22%20OR%20label%3A%22help%20wanted%22)`.
-// to have something like https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted")
+// to have something like https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted").
 func (wph *WebpageHandler) labelsToGhUrlParam() string {
 	labelSettings := wph.settingsService.GetSettings().GetLabelSlice()
 
