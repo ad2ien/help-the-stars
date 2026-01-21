@@ -8,6 +8,9 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+const readTimeoutSeconds = 5 * time.Second
+const writeTimeoutSeconds = 10 * time.Second
+
 type Server struct {
 	controller      *DataController
 	settingsService *SettingsService
@@ -36,8 +39,8 @@ func (s *Server) Start(templates *embed.FS, staticFiles *embed.FS) {
 	server := &http.Server{
 		Addr:         ":1983",
 		Handler:      nil,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  readTimeoutSeconds,
+		WriteTimeout: writeTimeoutSeconds,
 	}
 
 	err := server.ListenAndServe()

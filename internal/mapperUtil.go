@@ -11,7 +11,7 @@ import (
 // mapGhQueryToHelpWantedIssue maps GhQuery to HelpWantedIssue
 // only if there's an issue.
 func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
-	var repos []Repo
+	var repos = make([]Repo, 0, len(query.Data.Viewer.StarredRepositories.Nodes))
 
 	for _, ghRepo := range query.Data.Viewer.StarredRepositories.Nodes {
 		if len(ghRepo.Issues.Nodes) == 0 {
@@ -30,9 +30,9 @@ func mapGhQueryToHelpWantedIssue(query GhQuery) []Repo {
 
 		for _, issue := range ghRepo.Issues.Nodes {
 			helpWantedIssue := HelpWantedIssue{
-				Title:            string(issue.Title),
-				IssueDescription: string(issue.Body),
-				Url:              string(issue.Url),
+				Title:            issue.Title,
+				IssueDescription: issue.Body,
+				Url:              issue.Url,
 				CreationDate:     issue.CreatedAt,
 				RepoWithOwner:    ghRepo.NameWithOwner,
 			}

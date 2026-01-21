@@ -13,6 +13,10 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+const contextTimeoutSeconds = 5 * time.Second
+
+const issueLinkParam = "issues?q=is%3Aissue%20state%3Aopen%20"
+
 type WebpageHandler struct {
 	dataController  *DataController
 	templates       *embed.FS
@@ -30,7 +34,7 @@ func CreateWebpageHandler(dataController *DataController,
 }
 
 func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), contextTimeoutSeconds)
 	defer cancel()
 
 	// return 304 if possible
@@ -84,19 +88,18 @@ func truncate(s string, length int) string {
 	return s
 }
 
-const ISSUE_LINK_PARAM = "issues?q=is%3Aissue%20state%3Aopen%20"
-
 func (wph *WebpageHandler) buildHelpIssuesLink(repoOwner string) string {
-	return fmt.Sprintf("https://github.com/%s/%s%s", repoOwner, ISSUE_LINK_PARAM, wph.labelsToGhUrlParam())
+	return fmt.Sprintf("https://github.com/%s/%s%s", repoOwner, issueLinkParam, wph.labelsToGhUrlParam())
 }
 
 // TransformLabels transforms a string like `"good first issue", "help wanted"`
 // into `(label%3A%22good%20first%20issue%22%20OR%20label%3A%22help%20wanted%22)`.
-// to have something like https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted").
+// to have something like
+// https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted").
 func (wph *WebpageHandler) labelsToGhUrlParam() string {
 	labelSettings := wph.settingsService.GetSettings().GetLabelSlice()
 
-	var labels []string
+	var labels = make([]string, len(labelSettings))
 
 	for _, label := range labelSettings {
 		// URL encode the label (replace spaces with %20)

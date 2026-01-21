@@ -36,8 +36,7 @@ func NewConnection(migrationsFs embed.FS, settingsService *SettingsService) DbCo
 		log.Fatal(err)
 	}
 
-	err = ensureSchema(migrationsFs, conn)
-	if err != nil {
+	if err = ensureSchema(migrationsFs, conn); err != nil {
 		log.Fatal(err)
 	}
 
@@ -45,8 +44,7 @@ func NewConnection(migrationsFs embed.FS, settingsService *SettingsService) DbCo
 }
 
 func (dbConn *DbConnection) Close() {
-	err := dbConn.Connection.Close()
-	if err != nil {
+	if err := dbConn.Connection.Close(); err != nil {
 		log.Error("error closing connection", "error", err)
 	}
 }
@@ -76,10 +74,14 @@ func ensureSchema(migrations embed.FS, db *sql.DB) error {
 
 	err = m.Migrate(latestVersion)
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return err
+		return fmt.Errorf("failed to migrate to version %d, %w", latestVersion, err)
 	}
 
-	return sourceInstance.Close()
+	if err = sourceInstance.Close(); err != nil {
+		return fmt.Errorf("failed to close source instance, %w", err)
+	}
+
+	return nil
 }
 
 func getLatestMigrationVersion(migrations embed.FS) (uint, error) {

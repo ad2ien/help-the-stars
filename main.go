@@ -9,6 +9,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+const defaultInterfalHours = 7
+
 //go:embed migrations
 var Migrations embed.FS
 
@@ -28,9 +30,10 @@ func main() {
 	}
 
 	debugFlag := flag.Bool("debug", false, "Display debug logs")
-	interval := flag.Int("interval", 7, "Hours interval between github queries")
+	interval := flag.Int("interval", defaultInterfalHours, "Hours interval between github queries")
 	ghTokenFlag := flag.String("gh-token", "", "Github token")
-	labels := flag.String("labels", "\"help-wanted\", \"help wanted\",\"junior friendly\",\"good first issue\"", "labels to look for")
+	labels := flag.String("labels",
+	 "\"help-wanted\", \"help wanted\",\"junior friendly\",\"good first issue\"", "labels to look for")
 	dbFile := flag.String("db-file", "db/help-the-stars.db", "SQLite database file")
 	matrixServer := flag.String("matrix-server", "", "Matrix homeserver URL")
 	matrixUsername := flag.String("matrix-user", "", "Matrix user")

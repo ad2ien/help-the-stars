@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"text/template"
@@ -72,45 +73,45 @@ type GhStarsService struct {
 }
 
 type GhIssue struct {
-	Title     string
-	Url       string
-	Body      string
-	CreatedAt time.Time
+	Title     string    `json:"title"`
+	Url       string    `json:"url"`
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type GhRepository struct {
-	NameWithOwner  string
-	Description    string
-	StargazerCount int
+	NameWithOwner  string `json:"nameWithOwner"`
+	Description    string `json:"description"`
+	StargazerCount int    `json:"stargazerCount"`
 	Issues         struct {
-		Nodes []GhIssue
-	}
+		Nodes []GhIssue `json:"nodes"`
+	} `json:"issues"`
 	Languages struct {
-		Edges []GhLanguageEdge
-	}
+		Edges []GhLanguageEdge `json:"edges"`
+	} `json:"languages"`
 }
 
 type GhLanguageEdge struct {
-	Size int
-	Node GhLanguageNode
+	Size int            `json:"size"`
+	Node GhLanguageNode `json:"node"`
 }
 
 type GhLanguageNode struct {
-	Name string
+	Name string `json:"name"`
 }
 
 type GhQuery struct {
 	Data struct {
 		Viewer struct {
 			StarredRepositories struct {
-				Nodes    []GhRepository
+				Nodes    []GhRepository `json:"nodes"`
 				PageInfo struct {
-					EndCursor   string
-					HasNextPage bool
-				}
-			}
-		}
-	}
+					EndCursor   string `json:"endCursor"`
+					HasNextPage bool   `json:"hasNextPage"`
+				} `json:"pageInfo"`
+			} `json:"starredRepositories"`
+		} `json:"viewer"`
+	} `json:"data"`
 }
 
 func NewGithubStarService(settingsService *SettingsService) *GhStarsService {
@@ -156,9 +157,8 @@ func (ghs *GhStarsService) buildQueryFromTemplate(repoCursor string) (string, er
 
 	var query bytes.Buffer
 
-	err := ghs.tmpl.Execute(&query, data)
-	if err != nil {
-		return "", err
+	if err := ghs.tmpl.Execute(&query, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	return query.String(), nil
@@ -184,15 +184,15 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	if err != nil {
 		log.Error("Error marshaling query: %v", err)
 
-		return GhQuery{}, err
+		return GhQuery{}, fmt.Errorf("failed to marshal query: %w", err)
 	}
 
 	// Create the HTTP request
-	req, err := http.NewRequest(http.MethodPost, GRAPHQL_URL, bytes.NewBuffer(requestBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, GRAPHQL_URL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		log.Error("Error creating request: %v", err)
 
-		return GhQuery{}, err
+		return GhQuery{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set headers
@@ -207,6 +207,10 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	}
 	defer closeBody(resp.Body)
 
+	return processResponse(resp)
+}
+
+func processResponse(resp *http.Response) (GhQuery, error) {
 	if resp.StatusCode != http.StatusOK {
 		log.Error("Error sending request", "status", resp.Status)
 
@@ -218,28 +222,27 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	if err != nil {
 		log.Error("Error reading response: %v", err)
 
-		return GhQuery{}, err
+		return GhQuery{}, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	var queryResult GhQuery
 
-	err = json.Unmarshal(body, &queryResult)
-	if err != nil {
+	if err = json.Unmarshal(body, &queryResult); err != nil {
 		log.Error("Error unmarshaling response: %v", err)
 
-		return GhQuery{}, err
+		return GhQuery{}, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	return queryResult, nil
 }
 
-func doWithRetry(http *http.Client, req *http.Request) (*http.Response, error) {
+func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, error) {
 	i := 1
 
 	for {
-		resp, err := http.Do(req)
+		resp, err := httpclient.Do(req)
 		if err == nil {
-			if resp.StatusCode >= 500 {
+			if resp.StatusCode >= http.StatusInternalServerError {
 				log.Fatalf("Github server error: %d", resp.StatusCode)
 			}
 
@@ -248,7 +251,7 @@ func doWithRetry(http *http.Client, req *http.Request) (*http.Response, error) {
 
 		i++
 		if i >= MAX_RETRY {
-			return nil, err
+			return nil, fmt.Errorf("failed to execute request after %d retries: %w", MAX_RETRY, err)
 		}
 
 		time.Sleep(BACKOFF_DELAY * time.Duration(i))

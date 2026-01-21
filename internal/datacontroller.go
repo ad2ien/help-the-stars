@@ -127,8 +127,7 @@ func (d *DataController) checkAndDo(ctx context.Context, taskData *persistence.T
 }
 
 func (d *DataController) getAndSaveIssues(ctx context.Context) error {
-	err := d.queries.TaskDataInProgress(ctx)
-	if err != nil {
+	if err := d.queries.TaskDataInProgress(ctx); err != nil {
 		log.Error("Error getting starred repos", "error", err)
 
 		return fmt.Errorf("failed to set task data in progress: %w", err)
@@ -177,8 +176,8 @@ func (d *DataController) getAndSaveIssues(ctx context.Context) error {
 
 	d.handleNotifications(ctx, newIssues)
 
-	err = d.queries.UpdateTimeTaskData(ctx, sql.NullTime{Time: time.Now(), Valid: true})
-	if err != nil {
+	if err = d.queries.UpdateTimeTaskData(ctx,
+		sql.NullTime{Time: time.Now(), Valid: true}); err != nil {
 		log.Error("Error updating task data", "error", err)
 
 		return fmt.Errorf("failed to update task data: %w", err)
@@ -235,8 +234,7 @@ func (d *DataController) deleteRepos(ctx context.Context, expiredRepos []Repo) {
 	for i := range expiredRepos {
 		log.Info("Delete repo", "repo", expiredRepos[i].RepoOwner)
 
-		delErr := d.queries.DeleteRepo(ctx, expiredRepos[i].RepoOwner)
-		if delErr != nil {
+		if delErr := d.queries.DeleteRepo(ctx, expiredRepos[i].RepoOwner); delErr != nil {
 			log.Error("Error deleting issue", "error", delErr)
 		}
 	}
