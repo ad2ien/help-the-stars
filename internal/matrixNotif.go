@@ -49,6 +49,12 @@ func CreateMatrixClient(ctx context.Context, settingsService *SettingsService) *
 }
 
 func (c *MatrixClient) Notify(ctx context.Context, issue *HelpWantedIssue) {
+	if c == nil {
+		log.Warn("Matrix not configured")
+
+		return
+	}
+
 	message := fmt.Sprintf("Help wanted for new issue :\n%s\n%s", issue.Title, issue.Url)
 
 	content := event.MessageEventContent{
@@ -64,6 +70,12 @@ func (c *MatrixClient) Notify(ctx context.Context, issue *HelpWantedIssue) {
 }
 
 func (c *MatrixClient) NotifySeveralNewIssues(ctx context.Context) {
+	if c == nil {
+		log.Warn("Matrix not configured")
+
+		return
+	}
+
 	message := "Help wanted for several new issues. Could be worth checking Help-the-stars interface ⭐"
 
 	content := event.MessageEventContent{
@@ -72,6 +84,32 @@ func (c *MatrixClient) NotifySeveralNewIssues(ctx context.Context) {
 	}
 
 	_, err := c.client.SendMessageEvent(ctx,
+		id.RoomID(c.MatrixRoomID), event.EventMessage, content)
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func (c *MatrixClient) NotifyError(ctx context.Context, err error) {
+	if c == nil {
+		log.Warn("Matrix not configured")
+
+		return
+	}
+
+	formattedMessage := fmt.Sprintf(`⚠️ Oups an error occurred:
+	\n<blockquote>%s</blockquote>\n
+	It will be retried next iteration...`, err)
+	message := fmt.Sprintf("⚠️ Oups an error occurred: \n%s\nIt will be retried next iteration...", err)
+
+	content := event.MessageEventContent{
+		Format:        event.FormatHTML,
+		FormattedBody: formattedMessage,
+		MsgType:       event.MsgText,
+		Body:          message,
+	}
+
+	_, err = c.client.SendMessageEvent(ctx,
 		id.RoomID(c.MatrixRoomID), event.EventMessage, content)
 	if err != nil {
 		log.Error(err)

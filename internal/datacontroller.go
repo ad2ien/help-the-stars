@@ -121,6 +121,13 @@ func (d *DataController) checkAndDo(ctx context.Context, taskData *persistence.T
 		log.Info("worker : time elapsed, get data...")
 
 		if err := d.getAndSaveIssues(ctx); err != nil {
+			d.matrixClient.NotifyError(ctx, err)
+			// Updating task data to avoid short fail loop
+			if err = d.queries.UpdateTimeTaskData(ctx,
+				sql.NullTime{Time: time.Now(), Valid: true}); err != nil {
+				log.Error("Error updating task data", "error", err)
+			}
+
 			return
 		}
 	}
