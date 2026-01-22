@@ -241,12 +241,12 @@ func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, er
 
 	for {
 		resp, err := httpclient.Do(req)
-		if err == nil {
-			if resp.StatusCode >= http.StatusInternalServerError {
-				log.Fatalf("Github server error: %d", resp.StatusCode)
-			}
-
+		if err == nil && resp.StatusCode == http.StatusOK {
 			return resp, nil
+		}
+
+		if err == nil {
+			log.Warn("Github server error", "status", resp.StatusCode)
 		}
 
 		i++
