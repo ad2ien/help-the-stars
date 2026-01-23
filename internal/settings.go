@@ -17,6 +17,8 @@ type SettingsService struct {
 // NewSettingsService creates a new SettingsService instance.
 func NewSettingsService(settings *Settings) *SettingsService {
 	settings.checkSettings()
+	settings.setMaxAge()
+	settings.setLabelSlice()
 
 	return &SettingsService{
 		settings: settings,
@@ -31,14 +33,16 @@ type Settings struct {
 	DBFile   string
 	// labels to look for
 	// ex: "\"help-wanted\", \"help wanted\",\"junior friendly\",\"good first issue\""
-	Labels string
+	ConfiguredLabels string
 	// optional
 	MatrixRoomID   string
 	MatrixUsername string
 	MatrixPassword string
 	MatrixServer   string
 
-	maxAge string
+	// computed
+	MaxAge string
+	Labels []string
 }
 
 // GetSettings : Get all the settings.
@@ -52,7 +56,7 @@ func (ss *SettingsService) Print() {
 	log.Info("  Github token: **")
 	log.Infof("  Interval: %d hours", ss.GetSettings().Interval)
 	log.Infof("  Database file: %s", ss.GetSettings().DBFile)
-	log.Infof("  Labels: %s", ss.GetSettings().Labels)
+	log.Infof("  Labels: %s", ss.GetSettings().ConfiguredLabels)
 	log.Infof("  Matrix room ID: %s", ss.GetSettings().MatrixRoomID)
 	log.Infof("  Matrix username: %s", ss.GetSettings().MatrixUsername)
 	log.Info("  Matrix password: ***")
@@ -68,27 +72,24 @@ func (s *Settings) IsMatrixConfigured() bool {
 }
 
 // GetLabelSlice gets label slice from settings.
-func (s *Settings) GetLabelSlice() []string {
+func (s *Settings) setLabelSlice() {
 	// Regex to extract labels inside double quotes
 	re := regexp.MustCompile(`"([^"]+)"`)
-	matches := re.FindAllStringSubmatch(s.Labels, -1)
+	matches := re.FindAllStringSubmatch(s.ConfiguredLabels, -1)
 
-	var labels = make([]string, len(matches))
-	for _, match := range matches {
-		labels = append(labels, match[1])
+	if matches == nil {
+		log.Fatal("Invalid labels, format should be \"label1\", \"label2\", ...")
 	}
 
-	return labels
+	s.Labels = make([]string, len(matches))
+	for i, match := range matches {
+		s.Labels[i] = match[1]
+	}
 }
 
 // GetMaxAge gets the max time before which data is not fresh anymore.
-func (ss *SettingsService) GetMaxAge() string {
-	s := ss.GetSettings()
-	if s.maxAge == "" {
-		s.maxAge = strconv.Itoa(hoursInSeconds * s.Interval)
-	}
-
-	return s.maxAge
+func (s *Settings) setMaxAge() {
+	s.MaxAge = strconv.Itoa(hoursInSeconds * s.Interval)
 }
 
 func (s *Settings) checkSettings() {
@@ -108,11 +109,7 @@ func (s *Settings) checkSettings() {
 		log.Warn("Matrix notif not fully configured")
 	}
 
-	if s.Labels == "" {
+	if s.ConfiguredLabels == "" {
 		log.Fatal("Missing labels")
-	}
-
-	if s.GetLabelSlice() == nil {
-		log.Fatal("Invalid labels, format should be \"label1\", \"label2\", ...")
 	}
 }

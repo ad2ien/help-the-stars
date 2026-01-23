@@ -46,7 +46,7 @@ func main() {
 		&internal.Settings{
 			GhToken:        *ghTokenFlag,
 			Interval:       *interval,
-			Labels:         *labels,
+			ConfiguredLabels:         *labels,
 			DBFile:         *dbFile,
 			MatrixServer:   *matrixServer,
 			MatrixUsername: *matrixUsername,

@@ -67,7 +67,7 @@ func (wph *WebpageHandler) HandleWebPage(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("ETag", etag)
-	w.Header().Set("Cache-Control", "public, max-age="+wph.settingsService.GetMaxAge())
+	w.Header().Set("Cache-Control", "public, max-age="+wph.settingsService.settings.MaxAge)
 
 	err = tmpl.Execute(w, data)
 	if err != nil {
@@ -97,14 +97,14 @@ func (wph *WebpageHandler) buildHelpIssuesLink(repoOwner string) string {
 // to have something like
 // https://github.com/OWNER/REPO/issues?q=is"issue state=open (label="good first issue" OR label="help wanted").
 func (wph *WebpageHandler) labelsToGhUrlParam() string {
-	labelSettings := wph.settingsService.GetSettings().GetLabelSlice()
+	labelSettings := wph.settingsService.GetSettings().Labels
 
 	var labels = make([]string, len(labelSettings))
 
-	for _, label := range labelSettings {
+	for i, label := range labelSettings {
 		// URL encode the label (replace spaces with %20)
 		encodedLabel := strings.ReplaceAll(url.QueryEscape(label), "+", "%20")
-		labels = append(labels, fmt.Sprintf("label:%%22%s%%22", encodedLabel))
+		labels[i] = fmt.Sprintf("label:%%22%s%%22", encodedLabel)
 	}
 
 	// Join labels with " OR " and wrap in parentheses

@@ -151,7 +151,7 @@ func (ghs *GhStarsService) buildQueryFromTemplate(repoCursor string) (string, er
 		MaxIssues  int
 	}{
 		RepoCursor: repoCursor,
-		Labels:     ghs.settingsService.GetSettings().Labels,
+		Labels:     ghs.settingsService.GetSettings().ConfiguredLabels,
 		MaxIssues:  MAX_ISSUES_PER_REPO,
 	}
 
