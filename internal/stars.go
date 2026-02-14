@@ -62,6 +62,12 @@ const GRAPHQL_TEMPLATE = `
       }
     }
   }
+  rateLimit {
+     limit
+     remaining
+     used
+     resetAt
+   }
 }
 `
 
@@ -100,6 +106,13 @@ type GhLanguageNode struct {
 	Name string `json:"name"`
 }
 
+type RateLimit struct {
+	Limit     int    `json:"limit"`
+	Remaining int    `json:"remaining"`
+	Used      int    `json:"used"`
+	ResetAt   string `json:"resetAt"`
+}
+
 type GhQuery struct {
 	Data struct {
 		Viewer struct {
@@ -111,6 +124,7 @@ type GhQuery struct {
 				} `json:"pageInfo"`
 			} `json:"starredRepositories"`
 		} `json:"viewer"`
+		RateLimit RateLimit `json:"rateLimit"`
 	} `json:"data"`
 }
 
@@ -131,6 +145,8 @@ func (ghs *GhStarsService) GetStaredRepos(ctx context.Context) ([]Repo, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		log.Debug("Remaining rate limit", "remaining", response.Data.RateLimit.Remaining)
 
 		result = append(result, mapGhQueryToHelpWantedIssue(response)...)
 
@@ -199,41 +215,14 @@ func (ghs *GhStarsService) fetchQueryResults(ctx context.Context, cursor string)
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send the request
-	resp, err := doWithRetry(httpClient, req)
+	ghResponse, err := doWithRetry(httpClient, req)
 	if err != nil {
 		log.Error("Error sending request: %v", err)
 
 		return GhQuery{}, err
 	}
-	defer closeBody(resp.Body)
 
-	return processResponse(resp)
-}
-
-func processResponse(resp *http.Response) (GhQuery, error) {
-	if resp.StatusCode != http.StatusOK {
-		log.Error("Error sending request", "status", resp.Status)
-
-		return GhQuery{}, ErrUnexpectedStatusCode
-	}
-
-	// Read the response
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error("Error reading response: %v", err)
-
-		return GhQuery{}, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	var queryResult GhQuery
-
-	if err = json.Unmarshal(body, &queryResult); err != nil {
-		log.Error("Error unmarshaling response: %v", err)
-
-		return GhQuery{}, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return queryResult, nil
+	return responseToResult(ghResponse)
 }
 
 func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, error) {
@@ -243,6 +232,22 @@ func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, er
 		resp, err := httpclient.Do(req)
 		if err == nil && resp.StatusCode == http.StatusOK {
 			return resp, nil
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			log.Warn("Rate limit exceeded, wait until reset...")
+
+			queryRes, err := responseToResult(resp)
+			if err != nil {
+				return nil, err
+			}
+
+			resetTime, err := ParseGhDate(queryRes.Data.RateLimit.ResetAt)
+			if err != nil {
+				return nil, err
+			}
+			// Wait until the rate limit is reset
+			time.Sleep(time.Until(resetTime))
 		}
 
 		if err == nil {
@@ -258,8 +263,37 @@ func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, er
 	}
 }
 
+func responseToResult(resp *http.Response) (GhQuery, error) {
+	queryResult := GhQuery{}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("Error reading rate limited body : %v", err)
+
+		return queryResult, fmt.Errorf("failed to read response: %w", err)
+	}
+	defer closeBody(resp.Body)
+
+	if err = json.Unmarshal(body, &queryResult); err != nil {
+		log.Error("Error unmarshaling response: %v", err)
+
+		return queryResult, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return queryResult, nil
+}
+
 func closeBody(body io.ReadCloser) {
 	if err := body.Close(); err != nil {
 		log.Warn("Error closing response body: %v", err)
 	}
+}
+
+func ParseGhDate(date string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse date: %w", err)
+	}
+
+	return t, nil
 }
