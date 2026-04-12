@@ -1,9 +1,9 @@
 # Help the stars
 
-![GoLand](https://img.shields.io/badge/GoLand-0f0f0f?&logo=goland&logoColor=white)
-![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)
-[![Gitmoji](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg)](https://gitmoji.dev)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![Golang](https://img.shields.io/badge/language-Golang-00ADD8?&logo=go&logoColor=white)
+[![Gitmoji](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?logo=git)](https://gitmoji.dev)
+![Docker](https://img.shields.io/badge/build-docker-%230db7ed.svg?logo=docker&logoColor=white)
+[![License](https://img.shields.io/badge/📝%20License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build status](https://img.shields.io/github/actions/workflow/status/ad2ien/help-the-stars/build.yml?label=CI&logo=github)](https://github.com/ad2ien/help-the-stars/actions)
 
 ## What
