@@ -229,7 +229,7 @@ func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, er
 	i := 1
 
 	for {
-		resp, err := httpclient.Do(req)
+		resp, err := httpclient.Do(req) //nolint:gosec // URL is built internally
 		if err == nil && resp.StatusCode == http.StatusOK {
 			return resp, nil
 		}
