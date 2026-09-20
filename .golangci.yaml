@@ -29,3 +29,7 @@ linters:
     staticcheck:
        checks:
           - "-ST1011" # one letter variable
+
+    gosec:
+      excludes:
+        - G704 # SSRF via taint analysis, URL is built internally

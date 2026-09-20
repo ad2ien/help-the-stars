@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 RUN apk add --no-cache \
@@ -9,7 +9,11 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=1 go build -o help-the-stars main.go
 
-FROM alpine:3.22.1
+FROM alpine:3.24
 WORKDIR /app
+RUN addgroup -S app && adduser -S -G app app \
+ && mkdir -p /app/db \
+ && chown -R app:app /app
+
 COPY --from=builder /app/help-the-stars .
 CMD ["./help-the-stars"]
