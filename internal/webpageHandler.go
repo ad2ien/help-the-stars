@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"text/template"
+	"html/template"
 	"time"
 
 	"github.com/charmbracelet/log"

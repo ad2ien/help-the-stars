@@ -229,33 +229,19 @@ func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, er
 	i := 1
 
 	for {
-		resp, err := httpclient.Do(req) //nolint:gosec // URL is built internally
+		resp, err := httpclient.Do(req)
 		if err == nil && resp.StatusCode == http.StatusOK {
 			return resp, nil
 		}
 
-		if resp.StatusCode == http.StatusTooManyRequests {
-			log.Warn("Rate limit exceeded, wait until reset...")
-
-			queryRes, err := responseToResult(resp)
-			if err != nil {
-				return nil, err
-			}
-
-			resetTime, err := ParseGhDate(queryRes.Data.RateLimit.ResetAt)
-			if err != nil {
-				return nil, err
-			}
-			// Wait until the rate limit is reset
-			time.Sleep(time.Until(resetTime))
-		}
-
-		if err == nil {
-			log.Warn("Github server error", "status", resp.StatusCode)
-		}
+		manageErr(resp, err)
 
 		i++
-		if i >= MAX_RETRY {
+		if i > MAX_RETRY {
+			if err == nil {
+				err = ErrUnexpectedStatusCode
+			}
+
 			return nil, fmt.Errorf("failed to execute request after %d retries: %w", MAX_RETRY, err)
 		}
 
@@ -263,8 +249,34 @@ func doWithRetry(httpclient *http.Client, req *http.Request) (*http.Response, er
 	}
 }
 
+func manageErr(resp *http.Response, err error) {
+	switch {
+	case err != nil:
+		log.Error("Github request error", "error", err)
+	case resp.StatusCode == http.StatusTooManyRequests:
+		log.Warn("Rate limit exceeded, wait until reset...")
+
+		queryRes, err := responseToResult(resp)
+		if err != nil {
+			return
+		}
+
+		resetTime, err := ParseGhDate(queryRes.Data.RateLimit.ResetAt)
+		if err != nil {
+			return
+		}
+		// Wait until the rate limit is reset
+		time.Sleep(time.Until(resetTime))
+	default:
+		log.Warn("Github server error", "status", resp.StatusCode)
+		closeBody(resp.Body)
+	}
+}
+
 func responseToResult(resp *http.Response) (GhQuery, error) {
 	queryResult := GhQuery{}
+
+	defer closeBody(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -272,7 +284,6 @@ func responseToResult(resp *http.Response) (GhQuery, error) {
 
 		return queryResult, fmt.Errorf("failed to read response: %w", err)
 	}
-	defer closeBody(resp.Body)
 
 	if err = json.Unmarshal(body, &queryResult); err != nil {
 		log.Error("Error unmarshaling response: %v", err)
