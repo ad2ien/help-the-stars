@@ -11,8 +11,10 @@ linters:
 
   disable:
     - wsl
+    - wsl_v5 # wsl renamed in golangci-lint v2.2.0
     - depguard
     - exhaustruct
+    - exhaustruct_v5 # exhaustruct renamed in golangci-lint v2.13.0
     - bodyclose # closing in function
     - noinlineerr # if err = X ;
     - nonamedreturns
