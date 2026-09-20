@@ -1,6 +1,6 @@
 
 GO := "docker run -it --init --rm -v $(pwd):/app -w /app -p 1983:1983 -v go-cache:/go/pkg/mod -v go-build-cache:/root/.cache/go-build golang:1.26.8-trixie go"
-GOLINT := "docker run -it --init --rm -v $(pwd):/app -w /app -p 1983:1983 -v go-cache:/go/pkg/mod -v go-build-cache:/root/.cache/go-build golangci/golangci-lint"
+GOLINT := "docker run -it --init --rm -v $(pwd):/app -w /app -p 1983:1983 -v go-cache:/go/pkg/mod -v go-build-cache:/root/.cache/go-build golangci/golangci-lint:v2.13.2-alpine"
 SQLC := "docker run --rm -v $PWD:/src -w /src sqlc/sqlc"
 MIGRATE := "docker run --rm -v $(pwd)/migrations:/migrations --network host migrate/migrate"
 

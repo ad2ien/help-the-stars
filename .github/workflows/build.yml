@@ -16,7 +16,7 @@ jobs:
       - name: lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.11.3
+          version: v2.13.2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
